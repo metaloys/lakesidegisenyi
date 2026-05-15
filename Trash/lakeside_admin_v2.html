@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lakeside Admin — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --gold:#C9A96E;
+  --gold-light:#E8D5B0;
+  --gold-dim:rgba(201,169,110,0.15);
+  --deep:#0D1B1E;
+  --water:#1A3A42;
+  --surface:#132228;
+  --surface2:#0F1E22;
+  --text:#F5F0E8;
+  --text-muted:#7A9199;
+  --text-dim:#4A6570;
+  --border:rgba(201,169,110,0.15);
+  --border-strong:rgba(201,169,110,0.3);
+  --green:#2DB87A;
+  --green-bg:rgba(45,184,122,0.1);
+  --amber:#E5A030;
+  --amber-bg:rgba(229,160,48,0.1);
+  --red:#E05555;
+  --red-bg:rgba(224,85,85,0.1);
+  --blue:#4A9EBF;
+  --blue-bg:rgba(74,158,191,0.1);
+  --sidebar-w:240px;
+}
+
+html { font-size: 14px; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--deep);
+  color:var(--text);
+  display:flex; min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── LOGIN SCREEN ── */
+#login-screen {
+  position:fixed;inset:0;
+  background:var(--deep);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;
+  flex-direction:column;
+  gap:0;
+}
+.login-card {
+  width:360px;
+  border:1px solid var(--border-strong);
+  padding:2.5rem;
+  background:var(--surface);
+}
+.login-logo {
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;font-weight:300;
+  letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:0.3rem;
+  text-align:center;
+}
+.login-sub {
+  font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--text-muted);text-align:center;margin-bottom:2rem;
+}
+.login-field { display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1rem; }
+.login-label {
+  font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--text-muted);
+}
+.login-field input {
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  color:var(--text);padding:0.7rem 0.9rem;
+  font-family:'DM Sans',sans-serif;font-size:0.88rem;
+  outline:none;width:100%;transition:border-color 0.3s;
+}
+.login-field input:focus{border-color:var(--gold);}
+.login-field input::placeholder{color:var(--text-dim);}
+.login-btn {
+  width:100%;background:var(--gold);color:var(--deep);
+  border:none;padding:0.8rem;margin-top:0.5rem;
+  font-family:'DM Sans',sans-serif;font-size:0.72rem;
+  font-weight:500;letter-spacing:0.15em;text-transform:uppercase;
+  cursor:pointer;transition:opacity 0.3s;
+}
+.login-btn:hover{opacity:0.85;}
+.login-hint{font-size:0.72rem;color:var(--text-dim);text-align:center;margin-top:1rem;}
+.login-hint span{color:var(--gold);}
+.login-error{
+  font-size:0.75rem;color:var(--red);margin-top:0.5rem;
+  text-align:center;display:none;
+}
+
+/* ── SIDEBAR ── */
+#app{display:none;width:100%;flex:1;}
+#app.show{display:flex;}
+
+.sidebar {
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;position:sticky;top:0;
+  overflow-y:auto;
+}
+.sb-logo {
+  padding:1.5rem 1.25rem 1rem;
+  border-bottom:1px solid var(--border);
+}
+.sb-logo-name {
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.1rem;font-weight:300;
+  letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--gold);line-height:1.2;
+}
+.sb-logo-tag {
+  font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--text-dim);margin-top:0.2rem;
+}
+.sb-section-label {
+  font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--text-dim);padding:1.2rem 1.25rem 0.4rem;
+}
+.sb-nav{list-style:none;padding:0 0.6rem;}
+.sb-nav li{margin-bottom:2px;}
+.sb-nav a {
+  display:flex;align-items:center;gap:0.65rem;
+  padding:0.55rem 0.7rem;
+  font-size:0.8rem;font-weight:400;
+  color:var(--text-muted);text-decoration:none;
+  border-radius:3px;transition:all 0.2s;
+  position:relative;
+}
+.sb-nav a:hover{background:var(--gold-dim);color:var(--text);}
+.sb-nav a.active{background:var(--gold-dim);color:var(--gold);}
+.sb-nav a.active::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:2px;background:var(--gold);border-radius:0 2px 2px 0;
+}
+.sb-icon{font-size:0.9rem;width:16px;text-align:center;}
+.sb-badge {
+  margin-left:auto;
+  background:var(--gold);color:var(--deep);
+  font-size:0.58rem;font-weight:500;
+  padding:1px 6px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;
+}
+.sb-footer {
+  margin-top:auto;padding:1rem 1.25rem;
+  border-top:1px solid var(--border);
+}
+.sb-user{display:flex;align-items:center;gap:0.7rem;}
+.sb-avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--gold-dim);border:1px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;font-size:0.85rem;color:var(--gold);
+}
+.sb-user-name{font-size:0.78rem;color:var(--text);}
+.sb-user-role{font-size:0.62rem;color:var(--text-muted);}
+.sb-logout{
+  margin-left:auto;font-size:0.65rem;color:var(--text-dim);
+  background:none;border:none;cursor:pointer;letter-spacing:0.05em;
+  transition:color 0.2s;padding:0;
+}
+.sb-logout:hover{color:var(--red);}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;min-height:100vh;}
+
+/* TOPBAR */
+.topbar {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 2rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(13,27,30,0.6);
+  backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:50;
+}
+.topbar-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;font-weight:300;color:var(--text);
+}
+.topbar-right{display:flex;align-items:center;gap:1rem;}
+.topbar-date{
+  font-size:0.7rem;letter-spacing:0.1em;
+  color:var(--text-muted);
+  font-family:'JetBrains Mono',monospace;
+}
+.notif-btn{
+  position:relative;background:none;border:1px solid var(--border);
+  width:34px;height:34px;cursor:pointer;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;transition:all 0.2s;
+}
+.notif-btn:hover{border-color:var(--gold);color:var(--gold);}
+.notif-dot{
+  position:absolute;top:6px;right:6px;
+  width:6px;height:6px;border-radius:50%;background:var(--gold);
+}
+
+/* ── PAGE SECTIONS ── */
+.page{display:none;padding:2rem;}
+.page.active{display:block;}
+
+/* ── STAT CARDS ── */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;
+  margin-bottom:2rem;
+}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  padding:1.25rem 1.5rem;
+  position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--gold);opacity:0.6;
+}
+.stat-card.green::before{background:var(--green);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.blue::before{background:var(--blue);}
+.stat-label{
+  font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:0.6rem;display:block;
+}
+.stat-value{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.2rem;font-weight:300;color:var(--text);
+  line-height:1;display:block;
+}
+.stat-sub{
+  font-size:0.68rem;color:var(--text-dim);margin-top:0.4rem;display:block;
+}
+.stat-change{
+  display:inline-block;font-size:0.65rem;font-weight:500;
+  padding:2px 6px;margin-top:0.4rem;
+  font-family:'JetBrains Mono',monospace;
+}
+.stat-change.up{background:var(--green-bg);color:var(--green);}
+.stat-change.down{background:var(--red-bg);color:var(--red);}
+
+/* ── GRID LAYOUT ── */
+.dash-grid{
+  display:grid;grid-template-columns:1.6fr 1fr;gap:1.5rem;
+}
+
+/* ── SECTION CARD ── */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  overflow:hidden;margin-bottom:1.5rem;
+}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 1.25rem;border-bottom:1px solid var(--border);
+}
+.card-title{
+  font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--text-muted);font-weight:500;
+}
+.card-action{
+  font-size:0.65rem;color:var(--gold);
+  background:none;border:none;cursor:pointer;
+  letter-spacing:0.08em;transition:opacity 0.2s;
+}
+.card-action:hover{opacity:0.7;}
+
+/* ── RESERVATIONS TABLE ── */
+.res-table{width:100%;border-collapse:collapse;}
+.res-table th{
+  font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--text-dim);font-weight:500;padding:0.6rem 1rem;
+  text-align:left;border-bottom:1px solid var(--border);
+}
+.res-table td{
+  padding:0.75rem 1rem;border-bottom:1px solid rgba(201,169,110,0.06);
+  font-size:0.8rem;color:var(--text-muted);vertical-align:middle;
+}
+.res-table tr:last-child td{border-bottom:none;}
+.res-table tr:hover td{background:rgba(201,169,110,0.03);}
+.guest-name{color:var(--text);font-weight:500;}
+.res-date{font-family:'JetBrains Mono',monospace;font-size:0.72rem;}
+.status-pill{
+  display:inline-block;font-size:0.6rem;font-weight:500;
+  letter-spacing:0.1em;text-transform:uppercase;
+  padding:3px 8px;border-radius:2px;
+}
+.status-pill.confirmed{background:var(--green-bg);color:var(--green);}
+.status-pill.pending{background:var(--amber-bg);color:var(--amber);}
+.status-pill.cancelled{background:var(--red-bg);color:var(--red);}
+.status-pill.seated{background:var(--blue-bg);color:var(--blue);}
+.action-row{display:flex;gap:0.4rem;}
+.act-btn{
+  font-size:0.62rem;padding:3px 8px;
+  background:none;border:1px solid var(--border);
+  color:var(--text-muted);cursor:pointer;transition:all 0.2s;
+}
+.act-btn:hover{border-color:var(--gold);color:var(--gold);}
+.act-btn.confirm-btn:hover{border-color:var(--green);color:var(--green);}
+.act-btn.cancel-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* ── MINI CALENDAR ── */
+.mini-cal{padding:1rem 1.25rem;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.cal-month{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1rem;font-weight:400;color:var(--text);
+}
+.cal-nav{
+  background:none;border:1px solid var(--border);
+  color:var(--text-muted);width:26px;height:26px;
+  cursor:pointer;font-size:0.8rem;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;
+}
+.cal-nav:hover{border-color:var(--gold);color:var(--gold);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-dow{
+  font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--text-dim);text-align:center;padding:0.3rem 0;
+}
+.cal-day{
+  text-align:center;padding:0.35rem 0;
+  font-size:0.72rem;color:var(--text-muted);
+  cursor:pointer;position:relative;transition:all 0.2s;
+  border-radius:2px;
+}
+.cal-day:hover{background:var(--gold-dim);color:var(--text);}
+.cal-day.today{color:var(--gold);font-weight:500;}
+.cal-day.today::after{
+  content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;background:var(--gold);
+}
+.cal-day.has-res::after{
+  content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;background:var(--blue);
+}
+.cal-day.today.has-res::after{background:var(--gold);}
+.cal-day.empty{cursor:default;}
+
+/* ── QUICK STATS ── */
+.quick-stats{display:flex;flex-direction:column;gap:0.75rem;padding:1rem 1.25rem;}
+.qs-row{display:flex;align-items:center;justify-content:space-between;}
+.qs-label{font-size:0.72rem;color:var(--text-muted);}
+.qs-bar-wrap{flex:1;margin:0 0.8rem;height:3px;background:rgba(255,255,255,0.06);}
+.qs-bar{height:100%;background:var(--gold);border-radius:2px;transition:width 0.6s ease;}
+.qs-val{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.68rem;color:var(--gold);min-width:30px;text-align:right;
+}
+
+/* ── RESERVATIONS PAGE ── */
+.filter-bar{
+  display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap;
+}
+.filter-btn{
+  font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;
+  padding:0.4rem 0.9rem;background:none;
+  border:1px solid var(--border);color:var(--text-muted);
+  cursor:pointer;transition:all 0.2s;
+}
+.filter-btn:hover,.filter-btn.active{border-color:var(--gold);color:var(--gold);}
+.search-box{
+  margin-left:auto;
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.8rem;
+}
+.search-box input{
+  background:none;border:none;outline:none;
+  font-family:'DM Sans',sans-serif;font-size:0.78rem;
+  color:var(--text);width:180px;
+}
+.search-box input::placeholder{color:var(--text-dim);}
+.search-icon{color:var(--text-dim);font-size:0.8rem;}
+
+/* ── ANALYTICS PAGE ── */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.chart-wrap{padding:1.25rem;}
+.chart-title{
+  font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:1rem;
+}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:100px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.bar{
+  width:100%;background:var(--gold-dim);border-top:2px solid var(--gold);
+  transition:height 0.5s ease;min-height:4px;
+}
+.bar-label{font-size:0.55rem;color:var(--text-dim);}
+.bar-val{font-size:0.55rem;color:var(--gold);font-family:'JetBrains Mono',monospace;}
+.donut-wrap{display:flex;align-items:center;gap:1.5rem;padding:0 1.25rem 1.25rem;}
+.donut-svg{flex-shrink:0;}
+.donut-legend{display:flex;flex-direction:column;gap:0.6rem;}
+.legend-row{display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;color:var(--text-muted);}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ── SETTINGS PAGE ── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.form-section{padding:1.25rem;}
+.form-section-title{
+  font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:1rem;
+  padding-bottom:0.6rem;border-bottom:1px solid var(--border);
+}
+.s-field{display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.9rem;}
+.s-label{font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);}
+.s-field input,.s-field select,.s-field textarea{
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  color:var(--text);padding:0.55rem 0.75rem;
+  font-family:'DM Sans',sans-serif;font-size:0.82rem;
+  outline:none;transition:border-color 0.2s;width:100%;
+}
+.s-field input:focus,.s-field select:focus{border-color:var(--gold);}
+.s-field input::placeholder{color:var(--text-dim);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid rgba(201,169,110,0.06);}
+.toggle-info .toggle-name{font-size:0.8rem;color:var(--text);}
+.toggle-info .toggle-desc{font-size:0.7rem;color:var(--text-muted);margin-top:1px;}
+.toggle{
+  width:36px;height:20px;background:rgba(255,255,255,0.1);
+  border-radius:10px;position:relative;cursor:pointer;transition:background 0.3s;
+  border:none;flex-shrink:0;
+}
+.toggle.on{background:var(--gold);}
+.toggle::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:14px;height:14px;border-radius:50%;background:var(--text);
+  transition:left 0.3s;
+}
+.toggle.on::after{left:19px;}
+.save-btn{
+  background:var(--gold);color:var(--deep);border:none;
+  padding:0.6rem 1.5rem;font-family:'DM Sans',sans-serif;
+  font-size:0.7rem;font-weight:500;letter-spacing:0.12em;
+  text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;
+  margin-top:0.5rem;
+}
+.save-btn:hover{opacity:0.85;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:2rem;right:2rem;
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-left:3px solid var(--green);
+  padding:0.8rem 1.25rem;
+  font-size:0.78rem;color:var(--text);
+  opacity:0;transform:translateY(10px);
+  transition:all 0.3s;z-index:999;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.page.active{animation:fadeIn 0.3s ease;}
+
+/* ── GALLERY / PHOTO UPLOAD ── */
+.upload-zone{
+  border:2px dashed var(--border-strong);padding:3rem 2rem;
+  text-align:center;cursor:pointer;transition:all 0.3s;
+  background:var(--surface2);position:relative;
+}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--gold);background:var(--gold-dim);}
+.upload-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.upload-icon{font-family:'Cormorant Garamond',serif;font-size:2.5rem;
+  color:var(--gold);opacity:0.6;display:block;margin-bottom:0.75rem;}
+.upload-title{font-size:0.82rem;color:var(--text);margin-bottom:0.3rem;}
+.upload-sub{font-size:0.7rem;color:var(--text-muted);}
+.gallery-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+.gallery-tab{font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--text-muted);background:none;border:none;
+  border-bottom:2px solid transparent;padding:0.7rem 1.2rem;
+  cursor:pointer;margin-bottom:-1px;transition:all 0.25s;}
+.gallery-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.gallery-tab:hover:not(.active){color:var(--text);}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem;}
+.photo-item{position:relative;aspect-ratio:4/3;
+  background:var(--surface2);border:1px solid var(--border);overflow:hidden;}
+.photo-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s;}
+.photo-item:hover img{transform:scale(1.04);}
+.photo-overlay{position:absolute;inset:0;background:rgba(13,27,30,0.8);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0.5rem;opacity:0;transition:opacity 0.3s;}
+.photo-item:hover .photo-overlay{opacity:1;}
+.photo-badge{position:absolute;top:0.5rem;left:0.5rem;
+  font-size:0.55rem;letter-spacing:0.12em;text-transform:uppercase;
+  background:var(--gold);color:var(--deep);padding:2px 6px;}
+.photo-badge.menu{background:var(--blue);color:#fff;}
+.photo-badge.gallery{background:var(--green);color:#fff;}
+.photo-action-btn{font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;
+  background:none;border:1px solid rgba(245,240,232,0.35);
+  color:var(--text);padding:4px 12px;cursor:pointer;
+  transition:all 0.2s;width:130px;}
+.photo-action-btn:hover{border-color:var(--gold);color:var(--gold);}
+.photo-action-btn.del:hover{border-color:var(--red);color:var(--red);}
+.photo-name{font-size:0.62rem;color:var(--text-muted);
+  padding:0.35rem 0.5rem;background:rgba(13,27,30,0.7);
+  position:absolute;bottom:0;left:0;right:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.upload-queue{display:flex;flex-direction:column;gap:0.5rem;margin-top:1rem;}
+.queue-item{display:flex;align-items:center;gap:0.75rem;
+  background:var(--surface2);border:1px solid var(--border);padding:0.55rem 0.8rem;}
+.queue-thumb{width:38px;height:38px;object-fit:cover;flex-shrink:0;}
+.queue-name{font-size:0.75rem;color:var(--text);flex:1;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.queue-size{font-size:0.62rem;color:var(--text-muted);
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+.queue-bar-wrap{width:80px;height:3px;background:var(--border);flex-shrink:0;}
+.queue-bar{height:100%;background:var(--gold);width:0%;transition:width 0.2s;}
+.queue-status{font-size:0.6rem;padding:2px 7px;white-space:nowrap;}
+.queue-status.uploading{background:var(--amber-bg);color:var(--amber);}
+.queue-status.done{background:var(--green-bg);color:var(--green);}
+.queue-status.error{background:var(--red-bg);color:var(--red);}
+.storage-info{display:flex;justify-content:space-between;
+  font-size:0.65rem;color:var(--text-muted);
+  font-family:'JetBrains Mono',monospace;margin-bottom:0.35rem;}
+.storage-bar-wrap{height:3px;background:var(--border);margin-bottom:1.5rem;}
+.storage-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--green));
+  border-radius:2px;transition:width 0.5s;}
+.empty-state{text-align:center;padding:3rem;color:var(--text-dim);}
+.empty-icon{font-family:'Cormorant Garamond',serif;font-size:3rem;
+  color:var(--border-strong);display:block;margin-bottom:0.75rem;}
+.empty-text{font-size:0.8rem;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Lakeside</div>
+    <div class="login-sub">Admin Portal</div>
+    <div class="login-field">
+      <label class="login-label">Username</label>
+      <input type="text" id="l-user" placeholder="admin" autocomplete="off"/>
+    </div>
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="login-err">Invalid credentials. Try admin / lakeside2025</div>
+    <div class="login-hint">Demo: <span>admin</span> / <span>lakeside2025</span></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-name">Lakeside</div>
+      <div class="sb-logo-tag">Management Console</div>
+    </div>
+    <div class="sb-section-label">Overview</div>
+    <ul class="sb-nav">
+      <li><a href="#" class="active" onclick="nav('dashboard',this)"><span class="sb-icon">⊞</span> Dashboard</a></li>
+      <li><a href="#" onclick="nav('reservations',this)"><span class="sb-icon">◈</span> Reservations <span class="sb-badge" id="sb-pending">3</span></a></li>
+      <li><a href="#" onclick="nav('calendar',this)"><span class="sb-icon">◷</span> Calendar</a></li>
+    </ul>
+    <div class="sb-section-label">Manage</div>
+    <ul class="sb-nav">
+      <li><a href="#" onclick="nav('analytics',this)"><span class="sb-icon">◎</span> Analytics</a></li>
+      <li><a href="#" onclick="nav('menu',this)"><span class="sb-icon">✦</span> Menu Editor</a></li>
+      <li><a href="#" onclick="nav('photos',this)"><span class="sb-icon">⊙</span> Photos & Gallery</a></li>
+      <li><a href="#" onclick="nav('settings',this)"><span class="sb-icon">⚙</span> Settings</a></li>
+    </ul>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar">O</div>
+        <div>
+          <div class="sb-user-name">Owner</div>
+          <div class="sb-user-role">Administrator</div>
+        </div>
+        <button class="sb-logout" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="today-date"></div>
+        <button class="notif-btn" title="Notifications">🔔<span class="notif-dot"></span></button>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD PAGE ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Today's Reservations</span>
+          <span class="stat-value">7</span>
+          <span class="stat-change up">+2 from yesterday</span>
+        </div>
+        <div class="stat-card green">
+          <span class="stat-label">Confirmed</span>
+          <span class="stat-value">4</span>
+          <span class="stat-sub">3 pending approval</span>
+        </div>
+        <div class="stat-card amber">
+          <span class="stat-label">This Week's Covers</span>
+          <span class="stat-value">43</span>
+          <span class="stat-change up">+18% vs last week</span>
+        </div>
+        <div class="stat-card blue">
+          <span class="stat-label">Avg. Party Size</span>
+          <span class="stat-value">3.2</span>
+          <span class="stat-sub">guests per booking</span>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <!-- RECENT RESERVATIONS -->
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Pending Approval</span>
+              <button class="card-action" onclick="nav('reservations', document.querySelector('.sb-nav a:nth-child(2)'))">View all →</button>
+            </div>
+            <table class="res-table">
+              <thead>
+                <tr>
+                  <th>Guest</th>
+                  <th>Date & Time</th>
+                  <th>Guests</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pending-tbody">
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Today's Schedule</span>
+            </div>
+            <table class="res-table">
+              <thead>
+                <tr><th>Guest</th><th>Time</th><th>Party</th><th>Occasion</th><th>Status</th></tr>
+              </thead>
+              <tbody id="today-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">This Month</span></div>
+            <div class="mini-cal" id="mini-cal"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Booking Breakdown</span></div>
+            <div class="quick-stats">
+              <div class="qs-row">
+                <span class="qs-label">Dinner</span>
+                <div class="qs-bar-wrap"><div class="qs-bar" style="width:72%"></div></div>
+                <span class="qs-val">72%</span>
+              </div>
+              <div class="qs-row">
+                <span class="qs-label">Lunch</span>
+                <div class="qs-bar-wrap"><div class="qs-bar" style="width:48%"></div></div>
+                <span class="qs-val">48%</span>
+              </div>
+              <div class="qs-row">
+                <span class="qs-label">Breakfast</span>
+                <div class="qs-bar-wrap"><div class="qs-bar" style="width:31%"></div></div>
+                <span class="qs-val">31%</span>
+              </div>
+              <div class="qs-row">
+                <span class="qs-label">Afternoon</span>
+                <div class="qs-bar-wrap"><div class="qs-bar" style="width:20%"></div></div>
+                <span class="qs-val">20%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RESERVATIONS PAGE ── -->
+    <div class="page" id="page-reservations">
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterRes('all',this)">All</button>
+        <button class="filter-btn" onclick="filterRes('pending',this)">Pending</button>
+        <button class="filter-btn" onclick="filterRes('confirmed',this)">Confirmed</button>
+        <button class="filter-btn" onclick="filterRes('cancelled',this)">Cancelled</button>
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" placeholder="Search guest name…" oninput="searchRes(this.value)"/>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">All Reservations</span>
+          <span class="card-action" id="res-count">7 records</span>
+        </div>
+        <table class="res-table">
+          <thead>
+            <tr>
+              <th>Guest</th>
+              <th>Phone</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Party</th>
+              <th>Occasion</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="all-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── CALENDAR PAGE ── -->
+    <div class="page" id="page-calendar">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Reservation Calendar</span>
+          <span class="card-action" id="cal-month-label"></span>
+        </div>
+        <div id="full-cal" style="padding:1.25rem;"></div>
+      </div>
+    </div>
+
+    <!-- ── ANALYTICS PAGE ── -->
+    <div class="page" id="page-analytics">
+      <div class="stats-grid" style="margin-bottom:1.5rem;">
+        <div class="stat-card">
+          <span class="stat-label">Total Bookings (Month)</span>
+          <span class="stat-value">89</span>
+          <span class="stat-change up">+24% vs last month</span>
+        </div>
+        <div class="stat-card green">
+          <span class="stat-label">Confirmation Rate</span>
+          <span class="stat-value">91%</span>
+          <span class="stat-change up">+3pts</span>
+        </div>
+        <div class="stat-card amber">
+          <span class="stat-label">No-show Rate</span>
+          <span class="stat-value">4%</span>
+          <span class="stat-change down">-1pt improvement</span>
+        </div>
+        <div class="stat-card blue">
+          <span class="stat-label">Total Covers</span>
+          <span class="stat-value">284</span>
+          <span class="stat-sub">guests served this month</span>
+        </div>
+      </div>
+      <div class="analytics-grid">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Bookings by Day (This Week)</span></div>
+          <div class="chart-wrap">
+            <div class="bar-chart" id="week-chart"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Bookings by Occasion</span></div>
+          <div class="donut-wrap">
+            <svg class="donut-svg" width="90" height="90" viewBox="0 0 90 90" id="donut-svg"></svg>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Monthly Trend (Covers)</span></div>
+          <div class="chart-wrap">
+            <div class="bar-chart" id="month-chart"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Peak Booking Hours</span></div>
+          <div class="chart-wrap">
+            <div class="bar-chart" id="hour-chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MENU EDITOR PAGE ── -->
+    <div class="page" id="page-menu">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Menu Items</span>
+          <button class="card-action" onclick="showToast('Menu saved to website ✓')">Save & Publish →</button>
+        </div>
+        <div style="padding:1.25rem;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;" id="menu-items-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PHOTOS & GALLERY PAGE ── -->
+    <div class="page" id="page-photos">
+
+      <!-- STORAGE BAR -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-head">
+          <span class="card-title">Storage Usage</span>
+          <span class="card-action" id="storage-label">24.3 MB of 1 GB used</span>
+        </div>
+        <div style="padding:0.75rem 1.25rem 1rem;">
+          <div class="storage-info">
+            <span>Supabase Storage · Free tier</span>
+            <span id="storage-pct">2.4%</span>
+          </div>
+          <div class="storage-bar-wrap">
+            <div class="storage-bar" id="storage-bar" style="width:2.4%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:1.5rem;align-items:start;">
+
+        <!-- LEFT: UPLOAD PANEL -->
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Upload Photos</span>
+            </div>
+            <div style="padding:1.25rem;">
+              <!-- Category tag select -->
+              <div style="margin-bottom:1rem;">
+                <div class="s-label" style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.4rem;">Photo Category</div>
+                <select id="upload-category" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.55rem 0.75rem;font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none;width:100%;">
+                  <option value="gallery">Gallery (shown on website)</option>
+                  <option value="menu">Menu Item Photo</option>
+                  <option value="logo">Restaurant Logo</option>
+                  <option value="team">Team / Staff</option>
+                </select>
+              </div>
+
+              <!-- Drop zone -->
+              <div class="upload-zone" id="uploadZone"
+                ondragover="handleDragOver(event)"
+                ondragleave="handleDragLeave(event)"
+                ondrop="handleDrop(event)">
+                <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp"
+                  onchange="handleFileSelect(this.files)"/>
+                <span class="upload-icon">⊕</span>
+                <div class="upload-title">Drop photos here or click to browse</div>
+                <div class="upload-sub">JPEG · PNG · WebP · Max 5MB each</div>
+              </div>
+
+              <!-- Upload queue -->
+              <div class="upload-queue" id="uploadQueue"></div>
+
+              <!-- Upload button -->
+              <button id="uploadBtn" onclick="processUploadQueue()"
+                style="display:none;width:100%;margin-top:1rem;background:var(--gold);
+                color:var(--deep);border:none;padding:0.75rem;
+                font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:500;
+                letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;">
+                Upload All Photos →
+              </button>
+
+              <!-- Tips -->
+              <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+                <div style="font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.6rem;">Tips</div>
+                <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.8;">
+                  · Gallery photos appear on the public website<br/>
+                  · Use landscape orientation for best results<br/>
+                  · Menu photos should be 1:1 square ratio<br/>
+                  · Photos are served via Supabase CDN globally
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: PHOTO LIBRARY -->
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <span class="card-title">Photo Library</span>
+              <span id="photo-count" class="card-action">0 photos</span>
+            </div>
+            <div style="padding:1.25rem;">
+              <!-- Tabs -->
+              <div class="gallery-tabs">
+                <button class="gallery-tab active" onclick="filterPhotos('all',this)">All</button>
+                <button class="gallery-tab" onclick="filterPhotos('gallery',this)">Gallery</button>
+                <button class="gallery-tab" onclick="filterPhotos('menu',this)">Menu</button>
+                <button class="gallery-tab" onclick="filterPhotos('logo',this)">Logo</button>
+                <button class="gallery-tab" onclick="filterPhotos('team',this)">Team</button>
+              </div>
+              <!-- Grid -->
+              <div class="photo-grid" id="photoGrid"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── SETTINGS PAGE ── -->
+    <div class="page" id="page-settings">
+      <div class="settings-grid">
+        <div>
+          <div class="card">
+            <div class="form-section">
+              <div class="form-section-title">Restaurant Information</div>
+              <div class="s-field"><label class="s-label">Restaurant Name</label><input type="text" value="Lakeside Bar Beach & Restaurant"/></div>
+              <div class="s-field"><label class="s-label">Phone / WhatsApp</label><input type="text" value="0791 693 096"/></div>
+              <div class="s-field"><label class="s-label">Address</label><input type="text" value="Ave de la Production, Gisenyi"/></div>
+              <div class="s-field"><label class="s-label">Opening Hours</label><input type="text" value="Daily · 6:00 AM – 11:00 PM"/></div>
+              <button class="save-btn" onclick="showToast('Settings saved ✓')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="form-section">
+              <div class="form-section-title">Notification Settings</div>
+              <div class="toggle-row">
+                <div class="toggle-info"><div class="toggle-name">WhatsApp Alerts</div><div class="toggle-desc">Get notified on new reservations</div></div>
+                <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info"><div class="toggle-name">Email Notifications</div><div class="toggle-desc">Daily summary to your email</div></div>
+                <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info"><div class="toggle-name">Auto-Confirm</div><div class="toggle-desc">Auto-confirm bookings under 4 guests</div></div>
+                <button class="toggle" onclick="this.classList.toggle('on')"></button>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info"><div class="toggle-name">Reminder SMS</div><div class="toggle-desc">Send reminder 2h before reservation</div></div>
+                <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:1rem;">
+            <div class="form-section">
+              <div class="form-section-title">Capacity Settings</div>
+              <div class="s-field"><label class="s-label">Max Covers Per Slot</label><input type="number" value="40"/></div>
+              <div class="s-field"><label class="s-label">Default Booking Duration (mins)</label><input type="number" value="90"/></div>
+              <button class="save-btn" onclick="showToast('Capacity settings updated ✓')">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──
+const reservations = [
+  {id:1,name:'Jean Uwimana',phone:'0780 123 456',date:'2025-07-15',time:'07:00 AM – Breakfast',party:'2 guests',occasion:'Business Lunch',status:'confirmed',notes:'Window seat preferred'},
+  {id:2,name:'Amina Nzeyimana',phone:'0791 555 012',date:'2025-07-15',time:'12:00 PM – Lunch',party:'4 guests',occasion:'Birthday',status:'confirmed',notes:'Birthday cake arrangement'},
+  {id:3,name:'Patrick Habimana',phone:'0788 900 234',date:'2025-07-15',time:'07:00 PM – Dinner',party:'2 guests',occasion:'Anniversary',status:'pending',notes:''},
+  {id:4,name:'Claire Mukamana',phone:'0780 777 345',date:'2025-07-16',time:'07:00 PM – Dinner',party:'3–4 guests',occasion:'Just dining',status:'pending',notes:'Vegetarian option needed'},
+  {id:5,name:'Robert Nsengiyumva',phone:'0791 333 567',date:'2025-07-17',time:'12:00 PM – Lunch',party:'5–6 guests',occasion:'Private Event',status:'pending',notes:'Corporate lunch'},
+  {id:6,name:'Grace Uwase',phone:'0788 111 678',date:'2025-07-18',time:'04:00 PM – Afternoon',party:'1 guest',occasion:'Just dining',status:'confirmed',notes:''},
+  {id:7,name:'David Mugisha',phone:'0780 444 789',date:'2025-07-14',time:'07:00 PM – Dinner',party:'2 guests',occasion:'Anniversary',status:'cancelled',notes:'Guest cancelled via WhatsApp'},
+];
+
+const menuItems = [
+  {name:'Tilapia du Lac',cat:'Food',price:'RWF 8,500'},
+  {name:'Brochettes Royales',cat:'Food',price:'RWF 7,000'},
+  {name:'Prawn Beach Platter',cat:'Food',price:'RWF 11,000'},
+  {name:'Lake Kivu Sunset',cat:'Drinks',price:'RWF 4,500'},
+  {name:'Primus Draught',cat:'Drinks',price:'RWF 1,500'},
+  {name:'Full Beach Breakfast',cat:'Breakfast',price:'RWF 7,500'},
+];
+
+// ── LOGIN ──
+function doLogin(){
+  const u=document.getElementById('l-user').value.trim();
+  const p=document.getElementById('l-pass').value.trim();
+  const err=document.getElementById('login-err');
+  if(u==='admin'&&p==='lakeside2025'){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').classList.add('show');
+    initApp();
+  } else {
+    err.style.display='block';
+    setTimeout(()=>err.style.display='none',3000);
+  }
+}
+function doLogout(){
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-user').value='';
+  document.getElementById('l-pass').value='';
+}
+
+// ── NAV ──
+function nav(page, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-nav a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el){el.classList.add('active');}
+  const titles={dashboard:'Dashboard',reservations:'Reservations',calendar:'Calendar',analytics:'Analytics',menu:'Menu Editor',photos:'Photos & Gallery',settings:'Settings'};
+  document.getElementById('page-title').textContent=titles[page]||page;
+  if(page==='calendar') renderFullCal();
+  if(page==='analytics') renderCharts();
+  if(page==='menu') renderMenu();
+  if(page==='photos') renderPhotoGrid();
+  return false;
+}
+
+// ── INIT ──
+function initApp(){
+  // date
+  const d=new Date();
+  document.getElementById('today-date').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+  renderPending();
+  renderToday();
+  renderMiniCal();
+  renderAllRes(reservations);
+}
+
+// ── RENDER HELPERS ──
+function statusPill(s){
+  return `<span class="status-pill ${s}">${s}</span>`;
+}
+function actionBtns(id,status){
+  if(status==='pending') return `<div class="action-row"><button class="act-btn confirm-btn" onclick="confirmRes(${id})">Confirm</button><button class="act-btn cancel-btn" onclick="cancelRes(${id})">Cancel</button></div>`;
+  if(status==='confirmed') return `<div class="action-row"><button class="act-btn" onclick="seatRes(${id})">Seat</button></div>`;
+  return `<div class="action-row"><button class="act-btn" style="opacity:0.4;cursor:default;">—</button></div>`;
+}
+
+function renderPending(){
+  const pending=reservations.filter(r=>r.status==='pending');
+  document.getElementById('sb-pending').textContent=pending.length;
+  document.getElementById('pending-tbody').innerHTML=pending.map(r=>`
+    <tr id="row-dash-${r.id}">
+      <td><span class="guest-name">${r.name}</span>${r.notes?`<br><span style="font-size:0.65rem;color:var(--text-dim)">${r.notes}</span>`:''}
+      </td>
+      <td><span class="res-date">${r.date}</span><br><span style="font-size:0.68rem;color:var(--text-dim)">${r.time.split(' – ')[1]||r.time}</span></td>
+      <td>${r.party.replace(' guests','').replace(' guest','')}</td>
+      <td>${statusPill(r.status)}</td>
+      <td>${actionBtns(r.id,r.status)}</td>
+    </tr>`).join('');
+}
+
+function renderToday(){
+  const today=reservations.filter(r=>r.date==='2025-07-15');
+  document.getElementById('today-tbody').innerHTML=today.map(r=>`
+    <tr>
+      <td><span class="guest-name">${r.name}</span></td>
+      <td class="res-date">${r.time.split(' – ')[0]}</td>
+      <td>${r.party.split(' ')[0]}</td>
+      <td style="font-size:0.72rem;color:var(--text-dim)">${r.occasion}</td>
+      <td>${statusPill(r.status)}</td>
+    </tr>`).join('');
+}
+
+// ── MINI CALENDAR ──
+function renderMiniCal(){
+  const now=new Date(2025,6,15);// July 2025
+  const year=now.getFullYear(), month=now.getMonth();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const firstDay=new Date(year,month,1).getDay();
+  const resDates=new Set(reservations.map(r=>parseInt(r.date.split('-')[2])));
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dows=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let html=`<div class="cal-header">
+    <button class="cal-nav">‹</button>
+    <span class="cal-month">${monthNames[month]} ${year}</span>
+    <button class="cal-nav">›</button>
+  </div><div class="cal-grid">`;
+  dows.forEach(d=>html+=`<div class="cal-dow">${d}</div>`);
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday=d===15;
+    const hasRes=resDates.has(d);
+    html+=`<div class="cal-day${isToday?' today':''}${hasRes?' has-res':''}">${d}</div>`;
+  }
+  html+='</div>';
+  document.getElementById('mini-cal').innerHTML=html;
+}
+
+// ── ALL RESERVATIONS ──
+let currentFilter='all', currentSearch='';
+function renderAllRes(list){
+  document.getElementById('res-count').textContent=`${list.length} records`;
+  document.getElementById('all-tbody').innerHTML=list.map(r=>`
+    <tr id="row-all-${r.id}">
+      <td><span class="guest-name">${r.name}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;">${r.phone}</td>
+      <td class="res-date">${r.date}</td>
+      <td style="font-size:0.72rem;color:var(--text-dim)">${r.time.split(' – ')[0]}</td>
+      <td>${r.party.split(' ')[0]}</td>
+      <td style="font-size:0.72rem">${r.occasion}</td>
+      <td>${statusPill(r.status)}</td>
+      <td>${actionBtns(r.id,r.status)}</td>
+    </tr>`).join('');
+}
+function filterRes(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter();
+}
+function searchRes(val){currentSearch=val.toLowerCase();applyFilter();}
+function applyFilter(){
+  let list=reservations;
+  if(currentFilter!=='all') list=list.filter(r=>r.status===currentFilter);
+  if(currentSearch) list=list.filter(r=>r.name.toLowerCase().includes(currentSearch)||r.phone.includes(currentSearch));
+  renderAllRes(list);
+}
+
+// ── RESERVATION ACTIONS ──
+function confirmRes(id){
+  const r=reservations.find(r=>r.id===id);
+  if(r){r.status='confirmed';renderPending();renderToday();applyFilter();showToast(`Reservation for ${r.name} confirmed ✓`);}
+}
+function cancelRes(id){
+  const r=reservations.find(r=>r.id===id);
+  if(r){r.status='cancelled';renderPending();renderToday();applyFilter();showToast(`Reservation for ${r.name} cancelled`);}
+}
+function seatRes(id){
+  const r=reservations.find(r=>r.id===id);
+  if(r){r.status='seated';renderPending();renderToday();applyFilter();showToast(`${r.name} seated ✓`);}
+}
+
+// ── FULL CALENDAR ──
+function renderFullCal(){
+  const now=new Date(2025,6,1);
+  const year=now.getFullYear(), month=now.getMonth();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const firstDay=new Date(year,month,1).getDay();
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent=`${monthNames[month]} ${year}`;
+  const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">`;
+  dows.forEach(d=>html+=`<div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);padding:0.4rem;text-align:center;">${d}</div>`);
+  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`2025-07-${String(d).padStart(2,'0')}`;
+    const dayRes=reservations.filter(r=>r.date===dateStr);
+    const isToday=d===15;
+    html+=`<div style="min-height:80px;border:1px solid ${isToday?'var(--gold)':'rgba(201,169,110,0.12)'};padding:0.5rem;background:${isToday?'var(--gold-dim)':'transparent'};">
+      <div style="font-size:0.72rem;color:${isToday?'var(--gold)':'var(--text-muted)'};margin-bottom:4px;font-weight:${isToday?'500':'400'}">${d}</div>
+      ${dayRes.map(r=>`<div style="font-size:0.6rem;background:var(--green-bg);color:var(--green);padding:1px 4px;margin-bottom:2px;border-radius:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${r.name.split(' ')[0]} · ${r.time.split(' ')[0]}</div>`).join('')}
+    </div>`;
+  }
+  html+='</div>';
+  document.getElementById('full-cal').innerHTML=html;
+}
+
+// ── CHARTS ──
+function renderCharts(){
+  // Week chart
+  const weekData=[{d:'Mon',v:5},{d:'Tue',v:3},{d:'Wed',v:8},{d:'Thu',v:6},{d:'Fri',v:11},{d:'Sat',v:14},{d:'Sun',v:9}];
+  const maxW=Math.max(...weekData.map(x=>x.v));
+  document.getElementById('week-chart').innerHTML=weekData.map(x=>`
+    <div class="bar-col">
+      <span class="bar-val">${x.v}</span>
+      <div class="bar" style="height:${Math.round((x.v/maxW)*90)}px"></div>
+      <span class="bar-label">${x.d}</span>
+    </div>`).join('');
+
+  // Month chart
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+  const monthData=[42,38,55,61,70,78,89];
+  const maxM=Math.max(...monthData);
+  document.getElementById('month-chart').innerHTML=months.map((m,i)=>`
+    <div class="bar-col">
+      <span class="bar-val">${monthData[i]}</span>
+      <div class="bar" style="height:${Math.round((monthData[i]/maxM)*90)}px"></div>
+      <span class="bar-label">${m}</span>
+    </div>`).join('');
+
+  // Hour chart
+  const hours=['7am','10am','12pm','4pm','7pm','9pm'];
+  const hourData=[8,5,18,7,28,12];
+  const maxH=Math.max(...hourData);
+  document.getElementById('hour-chart').innerHTML=hours.map((h,i)=>`
+    <div class="bar-col">
+      <span class="bar-val">${hourData[i]}</span>
+      <div class="bar" style="height:${Math.round((hourData[i]/maxH)*90)}px"></div>
+      <span class="bar-label">${h}</span>
+    </div>`).join('');
+
+  // Donut
+  const segments=[
+    {label:'Just Dining',val:40,color:'#C9A96E'},
+    {label:'Birthday',val:22,color:'#2DB87A'},
+    {label:'Anniversary',val:18,color:'#4A9EBF'},
+    {label:'Business',val:12,color:'#E5A030'},
+    {label:'Event',val:8,color:'#E05555'},
+  ];
+  const total=segments.reduce((a,s)=>a+s.val,0);
+  const cx=45,cy=45,r=35,ir=22;
+  let angle=-Math.PI/2;
+  let paths='';
+  segments.forEach(s=>{
+    const sweep=(s.val/total)*2*Math.PI;
+    const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep), y2=cy+r*Math.sin(angle+sweep);
+    const ix1=cx+ir*Math.cos(angle), iy1=cy+ir*Math.sin(angle);
+    const ix2=cx+ir*Math.cos(angle+sweep), iy2=cy+ir*Math.sin(angle+sweep);
+    const large=sweep>Math.PI?1:0;
+    paths+=`<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${ix2.toFixed(2)} ${iy2.toFixed(2)} A${ir} ${ir} 0 ${large} 0 ${ix1.toFixed(2)} ${iy1.toFixed(2)} Z" fill="${s.color}" opacity="0.85"/>`;
+    angle+=sweep;
+  });
+  document.getElementById('donut-svg').innerHTML=paths;
+  document.getElementById('donut-legend').innerHTML=segments.map(s=>`
+    <div class="legend-row">
+      <div class="legend-dot" style="background:${s.color}"></div>
+      <span>${s.label}</span>
+      <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--gold)">${s.val}%</span>
+    </div>`).join('');
+}
+
+// ── MENU EDITOR ──
+function renderMenu(){
+  document.getElementById('menu-items-grid').innerHTML=menuItems.map(m=>`
+    <div style="border:1px solid var(--border);padding:0.9rem;background:var(--surface2);">
+      <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.3rem;">${m.cat}</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--text);margin-bottom:0.4rem;">${m.name}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--gold);">${m.price}</div>
+      <div style="display:flex;gap:0.4rem;margin-top:0.7rem;">
+        <button class="act-btn" style="flex:1;" onclick="showToast('Edit feature coming soon')">Edit</button>
+        <button class="act-btn cancel-btn" onclick="showToast('Item removed')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── PHOTOS & GALLERY ──────────────────────────────────────────
+
+// In-memory photo store (replaced by Supabase Storage in production)
+// Each photo: { id, name, url, category, size, uploadedAt, featured }
+let photoLibrary = [
+  {id:'p1', name:'lake-view-terrace.jpg',    url:'https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=400&q=70', category:'gallery', size:1240000, uploadedAt:'2025-07-10', featured:true},
+  {id:'p2', name:'tilapia-plated.jpg',       url:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=70', category:'menu',    size:980000,  uploadedAt:'2025-07-10', featured:false},
+  {id:'p3', name:'cocktails-sunset.jpg',     url:'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&q=70', category:'gallery', size:1560000, uploadedAt:'2025-07-11', featured:false},
+  {id:'p4', name:'brochettes-dish.jpg',      url:'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=400&q=70', category:'menu',    size:870000,  uploadedAt:'2025-07-11', featured:false},
+  {id:'p5', name:'restaurant-interior.jpg',  url:'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=70', category:'gallery', size:2100000, uploadedAt:'2025-07-12', featured:true},
+  {id:'p6', name:'breakfast-spread.jpg',     url:'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&q=70', category:'menu',    size:1340000, uploadedAt:'2025-07-13', featured:false},
+];
+
+let currentPhotoFilter = 'all';
+let uploadQueue = []; // files staged for upload
+
+// ── RENDER PHOTO GRID ──
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  const list = currentPhotoFilter === 'all'
+    ? photoLibrary
+    : photoLibrary.filter(p => p.category === currentPhotoFilter);
+
+  document.getElementById('photo-count').textContent = `${photoLibrary.length} photos`;
+
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <span class="empty-icon">⊙</span>
+      <div class="empty-text">No photos in this category yet.<br>Upload some above.</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(p => `
+    <div class="photo-item" id="photo-${p.id}">
+      <img src="${p.url}" alt="${p.name}" loading="lazy"/>
+      <div class="photo-badge ${p.category}">${p.category}</div>
+      <div class="photo-overlay">
+        <button class="photo-action-btn" onclick="toggleFeatured('${p.id}')">
+          ${p.featured ? '★ Unfeature' : '☆ Set Featured'}
+        </button>
+        <button class="photo-action-btn" onclick="copyPhotoUrl('${p.id}')">⊕ Copy URL</button>
+        <button class="photo-action-btn del" onclick="deletePhoto('${p.id}')">✕ Delete</button>
+      </div>
+      <div class="photo-name">${p.name}</div>
+    </div>`).join('');
+
+  // Update storage bar
+  const totalBytes = photoLibrary.reduce((a, p) => a + p.size, 0);
+  const totalMB = (totalBytes / 1024 / 1024).toFixed(1);
+  const pct = Math.min((totalBytes / (1024*1024*1024)) * 100, 100).toFixed(1);
+  document.getElementById('storage-label').textContent = `${totalMB} MB of 1 GB used`;
+  document.getElementById('storage-pct').textContent = `${pct}%`;
+  document.getElementById('storage-bar').style.width = pct + '%';
+}
+
+function filterPhotos(cat, btn) {
+  currentPhotoFilter = cat;
+  document.querySelectorAll('.gallery-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderPhotoGrid();
+}
+
+function toggleFeatured(id) {
+  const photo = photoLibrary.find(p => p.id === id);
+  if (photo) {
+    photo.featured = !photo.featured;
+    renderPhotoGrid();
+    showToast(photo.featured ? `${photo.name} set as featured ✓` : 'Removed from featured');
+  }
+}
+
+function copyPhotoUrl(id) {
+  const photo = photoLibrary.find(p => p.id === id);
+  if (photo) {
+    navigator.clipboard.writeText(photo.url).then(() => {
+      showToast('URL copied to clipboard ✓');
+    });
+  }
+}
+
+function deletePhoto(id) {
+  const photo = photoLibrary.find(p => p.id === id);
+  if (!photo) return;
+  if (!confirm(`Delete "${photo.name}"? This cannot be undone.`)) return;
+  photoLibrary = photoLibrary.filter(p => p.id !== id);
+
+  // Animate out
+  const el = document.getElementById('photo-' + id);
+  if (el) { el.style.opacity = '0'; el.style.transform = 'scale(0.9)'; el.style.transition = '0.3s'; }
+  setTimeout(() => renderPhotoGrid(), 300);
+  showToast(`${photo.name} deleted`);
+
+  // In production: await supabase.storage.from('lakeside-photos').remove([photo.storagePath])
+}
+
+// ── FILE SELECTION & DRAG DROP ──
+function handleFileSelect(files) {
+  addFilesToQueue(Array.from(files));
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+  document.getElementById('uploadZone').classList.remove('dragover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  addFilesToQueue(files);
+}
+
+function addFilesToQueue(files) {
+  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+  const valid = files.filter(f => {
+    if (f.size > MAX_SIZE) { showToast(`${f.name} is too large (max 5MB)`); return false; }
+    return true;
+  });
+  uploadQueue.push(...valid);
+  renderUploadQueue();
+}
+
+function renderUploadQueue() {
+  const container = document.getElementById('uploadQueue');
+  const btn = document.getElementById('uploadBtn');
+
+  if (uploadQueue.length === 0) {
+    container.innerHTML = '';
+    btn.style.display = 'none';
+    return;
+  }
+
+  btn.style.display = 'block';
+
+  container.innerHTML = uploadQueue.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    const sizeMB = (f.size / 1024 / 1024).toFixed(2);
+    return `
+      <div class="queue-item" id="qitem-${i}">
+        <img class="queue-thumb" src="${url}" alt="${f.name}"/>
+        <span class="queue-name">${f.name}</span>
+        <span class="queue-size">${sizeMB}MB</span>
+        <div class="queue-bar-wrap"><div class="queue-bar" id="qbar-${i}"></div></div>
+        <span class="queue-status uploading" id="qstatus-${i}">Queued</span>
+      </div>`;
+  }).join('');
+}
+
+// ── UPLOAD PROCESSOR ──
+// In production this calls: supabase.storage.from('lakeside-photos').upload(path, file)
+// Here it simulates the upload with a progress animation then stores locally.
+async function processUploadQueue() {
+  if (uploadQueue.length === 0) return;
+
+  const btn = document.getElementById('uploadBtn');
+  btn.textContent = 'Uploading…';
+  btn.disabled = true;
+
+  const category = document.getElementById('upload-category').value;
+
+  for (let i = 0; i < uploadQueue.length; i++) {
+    const file = uploadQueue[i];
+    const statusEl = document.getElementById('qstatus-' + i);
+    const barEl    = document.getElementById('qbar-' + i);
+
+    if (statusEl) statusEl.textContent = 'Uploading';
+    if (statusEl) statusEl.className = 'queue-status uploading';
+
+    try {
+      // Simulate upload progress
+      await simulateUpload(barEl);
+
+      // In production:
+      // const path = `${category}/${Date.now()}-${file.name}`;
+      // const { data, error } = await supabase.storage
+      //   .from('lakeside-photos')
+      //   .upload(path, file, { cacheControl: '3600', upsert: false });
+      // const { data: urlData } = supabase.storage.from('lakeside-photos').getPublicUrl(path);
+      // const publicUrl = urlData.publicUrl;
+
+      // For demo: use local object URL
+      const publicUrl = URL.createObjectURL(file);
+
+      // Add to library
+      photoLibrary.unshift({
+        id:         'p' + Date.now() + i,
+        name:       file.name,
+        url:        publicUrl,
+        category:   category,
+        size:       file.size,
+        uploadedAt: new Date().toISOString().split('T')[0],
+        featured:   false
+      });
+
+      if (statusEl) { statusEl.textContent = 'Done ✓'; statusEl.className = 'queue-status done'; }
+
+    } catch (err) {
+      if (statusEl) { statusEl.textContent = 'Failed'; statusEl.className = 'queue-status error'; }
+    }
+  }
+
+  // Reset
+  setTimeout(() => {
+    uploadQueue = [];
+    renderUploadQueue();
+    renderPhotoGrid();
+    btn.textContent = 'Upload All Photos →';
+    btn.disabled = false;
+    showToast(`${photoLibrary.length > 0 ? 'Photos uploaded successfully ✓' : 'Upload complete'}`);
+  }, 600);
+}
+
+function simulateUpload(barEl) {
+  return new Promise(resolve => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 25;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(interval);
+        if (barEl) barEl.style.width = '100%';
+        setTimeout(resolve, 150);
+      } else {
+        if (barEl) barEl.style.width = progress + '%';
+      }
+    }, 120);
+  });
+}
+
+// ── TOAST ──
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>

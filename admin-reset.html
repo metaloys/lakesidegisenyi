@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lakeside Admin — New Password</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/admin.css"/>
+</head>
+<body>
+<div id="login-screen">
+  <div class="login-card" id="reset-wait">
+    <div class="login-logo">Lakeside</div>
+    <div class="login-sub">Verifying link…</div>
+  </div>
+  <div class="login-card" id="reset-form" hidden>
+    <div class="login-logo">Lakeside</div>
+    <div class="login-sub">Choose a new password</div>
+    <div class="login-field">
+      <label class="login-label">New password</label>
+      <input type="password" id="new-pass" placeholder="At least 8 characters" autocomplete="new-password"/>
+    </div>
+    <div class="login-field">
+      <label class="login-label">Confirm password</label>
+      <input type="password" id="new-pass2" placeholder="Repeat password" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitNewPassword()"/>
+    </div>
+    <button type="button" class="login-btn" id="reset-btn" onclick="submitNewPassword()">Update password</button>
+    <div class="login-error" id="reset-err"></div>
+    <div class="login-success" id="reset-ok"></div>
+  </div>
+  <div class="login-card" id="reset-invalid" hidden>
+    <div class="login-logo">Lakeside</div>
+    <div class="login-sub">Link expired or invalid</div>
+    <p class="login-hint" style="margin-top:0;">Request a new reset link from the admin login page.</p>
+    <button type="button" class="login-btn" onclick="location.href='admin.html'">Back to sign in</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/admin-reset.js"></script>
+</body>
+</html>

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lakeside Bar Beach & Restaurant</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #C9A96E;
+    --gold-light: #E8D5B0;
+    --deep: #0D1B1E;
+    --water: #1A3A42;
+    --surface: #132228;
+    --mist: rgba(201,169,110,0.12);
+    --text: #F5F0E8;
+    --text-muted: #8FA3A8;
+    --border: rgba(201,169,110,0.2);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--deep);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 4rem;
+    background: rgba(13,27,30,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-cta {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--deep);
+    background: var(--gold);
+    border: none;
+    padding: 0.6rem 1.4rem;
+    cursor: pointer;
+    transition: opacity 0.3s;
+  }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 60% at 50% 80%, rgba(26,58,66,0.8) 0%, transparent 70%),
+      linear-gradient(180deg, rgba(13,27,30,0.3) 0%, rgba(13,27,30,0.7) 100%),
+      url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80') center/cover no-repeat;
+  }
+  .hero-badge {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.7rem; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--border);
+    padding: 0.45rem 1.2rem;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero-badge::before {
+    content: ''; width: 18px; height: 1px; background: var(--gold);
+  }
+  .hero-badge::after {
+    content: ''; width: 18px; height: 1px; background: var(--gold);
+  }
+  .hero-title {
+    position: relative;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(3.5rem, 8vw, 7rem);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    animation: fadeUp 0.8s 0.15s ease both;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold-light);
+  }
+  .hero-sub {
+    position: relative;
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    margin-top: 1.5rem;
+    max-width: 480px;
+    line-height: 1.8;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+  .hero-actions {
+    position: relative;
+    display: flex; gap: 1rem; margin-top: 2.5rem;
+    animation: fadeUp 0.8s 0.45s ease both;
+  }
+  .btn-primary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--deep);
+    background: var(--gold);
+    border: none; padding: 0.9rem 2rem;
+    cursor: pointer; text-decoration: none;
+    display: inline-block; transition: opacity 0.3s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-outline {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold);
+    background: transparent;
+    border: 1px solid var(--border); padding: 0.9rem 2rem;
+    cursor: pointer; text-decoration: none;
+    display: inline-block; transition: all 0.3s;
+  }
+  .btn-outline:hover { background: var(--mist); }
+  .hero-stats {
+    position: relative;
+    display: flex; gap: 3rem; margin-top: 4rem;
+    animation: fadeUp 0.8s 0.6s ease both;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem; font-weight: 300;
+    color: var(--gold); display: block;
+  }
+  .stat-label {
+    font-size: 0.68rem; font-weight: 500;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--text-muted); margin-top: 0.3rem;
+  }
+  .scroll-hint {
+    position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    animation: pulse 2s infinite;
+  }
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, transparent, var(--gold));
+  }
+  .scroll-text {
+    font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* DIVIDER */
+  .divider {
+    display: flex; align-items: center; gap: 1.5rem;
+    margin: 0 auto; max-width: 300px; padding: 3rem 0;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-icon {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; color: var(--gold); font-weight: 300;
+  }
+
+  /* SECTION LAYOUT */
+  section { padding: 5rem 4rem; max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    font-size: 0.68rem; font-weight: 500;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 300; line-height: 1.1;
+    color: var(--text); margin-bottom: 1.5rem;
+  }
+  .section-title em { font-style: italic; color: var(--gold-light); }
+
+  /* ABOUT */
+  .about-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5rem;
+    align-items: center; margin-top: 3rem;
+  }
+  .about-img-wrap { position: relative; }
+  .about-img {
+    width: 100%; aspect-ratio: 4/5; object-fit: cover;
+    display: block;
+  }
+  .about-img-accent {
+    position: absolute; bottom: -1.5rem; right: -1.5rem;
+    width: 60%; aspect-ratio: 1;
+    border: 2px solid var(--border);
+    z-index: -1;
+  }
+  .about-body {
+    font-size: 1rem; font-weight: 300;
+    color: var(--text-muted); line-height: 1.9;
+    margin-bottom: 1.5rem;
+  }
+  .features-row {
+    display: flex; gap: 2rem; margin-top: 2rem;
+  }
+  .feature { flex: 1; }
+  .feature-icon {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem; color: var(--gold);
+    margin-bottom: 0.5rem; display: block;
+  }
+  .feature-title {
+    font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text); margin-bottom: 0.4rem;
+  }
+  .feature-body {
+    font-size: 0.82rem; color: var(--text-muted); line-height: 1.7;
+  }
+
+  /* MENU */
+  .menu-section { background: var(--surface); padding: 5rem 0; }
+  .menu-inner { max-width: 1200px; margin: 0 auto; padding: 0 4rem; }
+  .menu-tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+  .menu-tab {
+    font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--text-muted);
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 0.8rem 1.5rem; cursor: pointer;
+    margin-bottom: -1px; transition: all 0.3s;
+  }
+  .menu-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .menu-tab:hover:not(.active) { color: var(--text); }
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .menu-item {
+    padding: 1.4rem 0;
+    border-bottom: 1px solid rgba(201,169,110,0.08);
+    display: flex; justify-content: space-between; align-items: start;
+    gap: 1rem;
+  }
+  .menu-item:nth-child(odd) { padding-right: 3rem; }
+  .menu-item:nth-child(even) { padding-left: 3rem; border-left: 1px solid rgba(201,169,110,0.08); }
+  .menu-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; font-weight: 400;
+    color: var(--text); display: block; margin-bottom: 0.3rem;
+  }
+  .menu-desc {
+    font-size: 0.78rem; color: var(--text-muted); line-height: 1.6;
+  }
+  .menu-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; color: var(--gold);
+    white-space: nowrap; font-weight: 400;
+  }
+  .menu-panel { display: none; }
+  .menu-panel.active { display: grid; }
+
+  /* GALLERY */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 220px 220px;
+    gap: 1rem; margin-top: 3rem;
+  }
+  .gallery-item { overflow: hidden; }
+  .gallery-item:first-child { grid-row: span 2; }
+  .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s; }
+  .gallery-item:hover img { transform: scale(1.04); }
+
+  /* RESERVATION */
+  .reservation-section {
+    background: var(--surface);
+    padding: 5rem 0;
+  }
+  .reservation-inner {
+    max-width: 1200px; margin: 0 auto; padding: 0 4rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6rem;
+    align-items: start;
+  }
+  .res-info-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem; font-weight: 300;
+    color: var(--text); margin-bottom: 1.5rem; line-height: 1.2;
+  }
+  .res-info-body {
+    font-size: 0.9rem; color: var(--text-muted); line-height: 1.9;
+    margin-bottom: 2rem;
+  }
+  .contact-rows { display: flex; flex-direction: column; gap: 1rem; }
+  .contact-row { display: flex; align-items: center; gap: 1rem; }
+  .contact-icon {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem; color: var(--gold);
+    flex-shrink: 0;
+  }
+  .contact-text { font-size: 0.85rem; color: var(--text-muted); }
+  .contact-text strong { color: var(--text); font-weight: 500; display: block; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .res-form { display: flex; flex-direction: column; gap: 1rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: span 2; }
+  .form-label {
+    font-size: 0.68rem; font-weight: 500;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.75rem 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    outline: none; transition: border-color 0.3s;
+    width: 100%;
+  }
+  .form-group select { appearance: none; }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: var(--gold); }
+  .form-group textarea { resize: none; height: 90px; }
+  .form-group input::placeholder,
+  .form-group textarea::placeholder { color: rgba(143,163,168,0.5); }
+  .form-submit {
+    background: var(--gold); color: var(--deep);
+    border: none; padding: 1rem 2rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    cursor: pointer; transition: opacity 0.3s;
+    margin-top: 0.5rem;
+  }
+  .form-submit:hover { opacity: 0.85; }
+  .form-note {
+    font-size: 0.75rem; color: var(--text-muted);
+    line-height: 1.7; margin-top: 0.5rem;
+  }
+  .success-msg {
+    display: none;
+    background: rgba(29,158,117,0.1);
+    border: 1px solid rgba(29,158,117,0.3);
+    padding: 1rem 1.25rem;
+    font-size: 0.88rem; color: #5DCAA5;
+    line-height: 1.6; margin-top: 1rem;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--deep);
+    border-top: 1px solid var(--border);
+    padding: 3rem 4rem;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1.5rem;
+  }
+  .footer-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; font-weight: 300;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold);
+  }
+  .footer-text { font-size: 0.78rem; color: var(--text-muted); }
+  .footer-social { display: flex; gap: 1rem; }
+  .social-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 0.75rem;
+    text-decoration: none; transition: all 0.3s;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .social-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ANIMS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.5; } 50% { opacity: 1; }
+  }
+
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Lakeside</div>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#menu">Menu</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#reserve">Reserve</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('reserve').scrollIntoView({behavior:'smooth'})">Book a Table</button>
+</nav>
+
+<!-- HERO -->
+<div class="hero" id="home">
+  <div class="hero-bg"></div>
+  <div class="hero-badge">Gisenyi · Lake Kivu · Rwanda</div>
+  <h1 class="hero-title">Where the Lake<br>Meets <em>Fine Taste</em></h1>
+  <p class="hero-sub">An extraordinary dining experience on the shores of Lake Kivu — fresh cuisine, handcrafted cocktails, and sunsets that last forever.</p>
+  <div class="hero-actions">
+    <a href="#menu" class="btn-primary">Explore Menu</a>
+    <a href="#reserve" class="btn-outline">Reserve a Table</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-num">3.9★</span>
+      <span class="stat-label">Google Rating</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">334+</span>
+      <span class="stat-label">Happy Guests</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">6am</span>
+      <span class="stat-label">Open Daily</span>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <span class="scroll-text">Scroll</span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="reveal">
+    <div class="section-label">Our Story</div>
+    <h2 class="section-title">A Taste of <em>Lakeside Living</em></h2>
+  </div>
+  <div class="about-grid reveal">
+    <div class="about-img-wrap">
+      <img class="about-img" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80" alt="Restaurant interior" />
+      <div class="about-img-accent"></div>
+    </div>
+    <div>
+      <p class="about-body">
+        Nestled along the shores of the breathtaking Lake Kivu in Gisenyi, Lakeside Bar Beach & Restaurant has been the heartbeat of the local dining scene. Our kitchen draws from the freshest local catch and seasonal produce, crafting dishes that honour Rwandan heritage with a contemporary touch.
+      </p>
+      <p class="about-body">
+        From sunrise breakfasts watching the mist lift off the water, to candlelit dinners as the lake reflects a thousand stars — every moment here is curated for those who appreciate the finer things in life.
+      </p>
+      <div class="features-row">
+        <div class="feature">
+          <span class="feature-icon">⚓</span>
+          <div class="feature-title">Lakefront Views</div>
+          <div class="feature-body">Every seat faces the natural beauty of Lake Kivu</div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✦</span>
+          <div class="feature-title">Fresh Cuisine</div>
+          <div class="feature-body">Locally sourced ingredients, prepared with care</div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">◈</span>
+          <div class="feature-title">Full Bar</div>
+          <div class="feature-body">Craft cocktails, fine wines & local brews</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MENU -->
+<div class="menu-section" id="menu">
+  <div class="menu-inner">
+    <div class="reveal">
+      <div class="section-label">Our Menu</div>
+      <h2 class="section-title">Crafted with <em>Passion</em></h2>
+    </div>
+    <div class="menu-tabs reveal">
+      <button class="menu-tab active" onclick="switchTab('food', this)">Food</button>
+      <button class="menu-tab" onclick="switchTab('drinks', this)">Drinks & Bar</button>
+      <button class="menu-tab" onclick="switchTab('breakfast', this)">Breakfast</button>
+    </div>
+
+    <div id="tab-food" class="menu-panel active menu-grid reveal">
+      <div class="menu-item">
+        <div><span class="menu-name">Tilapia du Lac</span><span class="menu-desc">Fresh Lake Kivu tilapia, lemon herb butter, seasonal vegetables</span></div>
+        <span class="menu-price">RWF 8,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Brochettes Royales</span><span class="menu-desc">Premium beef skewers, chimichurri, roasted cassava chips</span></div>
+        <span class="menu-price">RWF 7,000</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Prawn Beach Platter</span><span class="menu-desc">Grilled lake prawns, garlic butter, avocado salsa, lime</span></div>
+        <span class="menu-price">RWF 11,000</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Isombe & Goat</span><span class="menu-desc">Traditional cassava leaves, slow-braised goat, plantain</span></div>
+        <span class="menu-price">RWF 6,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Beach Burger</span><span class="menu-desc">200g beef patty, caramelised onions, local cheese, brioche</span></div>
+        <span class="menu-price">RWF 5,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Vegetarian Mezze</span><span class="menu-desc">Roasted seasonal vegetables, hummus, flatbread, salad</span></div>
+        <span class="menu-price">RWF 5,000</span>
+      </div>
+    </div>
+
+    <div id="tab-drinks" class="menu-panel menu-grid reveal">
+      <div class="menu-item">
+        <div><span class="menu-name">Lake Kivu Sunset</span><span class="menu-desc">Passion fruit, rum, ginger beer, fresh mint, chilli rim</span></div>
+        <span class="menu-price">RWF 4,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Amarula Lakeside</span><span class="menu-desc">Amarula, espresso, cream, dark chocolate shavings</span></div>
+        <span class="menu-price">RWF 4,000</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Primus Draught</span><span class="menu-desc">Rwanda's finest lager, ice cold, served in a frosted glass</span></div>
+        <span class="menu-price">RWF 1,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">House Red / White</span><span class="menu-desc">Curated South African & French selection, glass pour</span></div>
+        <span class="menu-price">RWF 3,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Fresh Mango Crush</span><span class="menu-desc">Blended mango, lime, honey, sparkling water, mint</span></div>
+        <span class="menu-price">RWF 2,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Rwandan Coffee</span><span class="menu-desc">Single origin, specialty roast — flat white, latte or filter</span></div>
+        <span class="menu-price">RWF 2,000</span>
+      </div>
+    </div>
+
+    <div id="tab-breakfast" class="menu-panel menu-grid reveal">
+      <div class="menu-item">
+        <div><span class="menu-name">Full Beach Breakfast</span><span class="menu-desc">Eggs your way, bacon, toast, fruit, fresh juice, coffee</span></div>
+        <span class="menu-price">RWF 7,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Avocado Toast</span><span class="menu-desc">Sourdough, smashed avocado, poached egg, chilli flakes</span></div>
+        <span class="menu-price">RWF 4,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Tropical Fruit Bowl</span><span class="menu-desc">Seasonal Rwandan fruits, yoghurt, granola, honey drizzle</span></div>
+        <span class="menu-price">RWF 3,500</span>
+      </div>
+      <div class="menu-item">
+        <div><span class="menu-name">Omelette du Lac</span><span class="menu-desc">Three-egg omelette, smoked tilapia, herbs, grilled tomato</span></div>
+        <span class="menu-price">RWF 5,000</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="reveal">
+    <div class="section-label">The Experience</div>
+    <h2 class="section-title">Life on the <em>Lake</em></h2>
+  </div>
+  <div class="gallery-grid reveal">
+    <div class="gallery-item">
+      <img src="https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=800&q=80" alt="Lake view dining"/>
+    </div>
+    <div class="gallery-item">
+      <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80" alt="Food"/>
+    </div>
+    <div class="gallery-item">
+      <img src="https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=600&q=80" alt="Cocktails"/>
+    </div>
+    <div class="gallery-item">
+      <img src="https://images.unsplash.com/photo-1600891964092-4316c288032e?w=600&q=80" alt="Plated dish"/>
+    </div>
+    <div class="gallery-item">
+      <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80" alt="Restaurant"/>
+    </div>
+  </div>
+</section>
+
+<!-- RESERVATION -->
+<div class="reservation-section" id="reserve">
+  <div class="reservation-inner">
+    <div class="reveal">
+      <div class="section-label">Book Your Table</div>
+      <h2 class="res-info-title">Reserve Your<br><em>Lakeside Moment</em></h2>
+      <p class="res-info-body">Whether it's a romantic dinner, family gathering, or private event — we'll make it unforgettable. Reservations recommended, especially for weekends.</p>
+      <div class="contact-rows">
+        <div class="contact-row">
+          <div class="contact-icon">✆</div>
+          <div class="contact-text">
+            <strong>Phone / WhatsApp</strong>
+            0791 693 096
+          </div>
+        </div>
+        <div class="contact-row">
+          <div class="contact-icon">⌖</div>
+          <div class="contact-text">
+            <strong>Location</strong>
+            Ave de la Production, Gisenyi, Rwanda
+          </div>
+        </div>
+        <div class="contact-row">
+          <div class="contact-icon">◷</div>
+          <div class="contact-text">
+            <strong>Opening Hours</strong>
+            Daily · 6:00 AM – 11:00 PM
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal">
+      <form class="res-form" id="resForm" onsubmit="handleReserve(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input type="text" placeholder="Jean" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input type="text" placeholder="Uwimana" required/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone / WhatsApp</label>
+            <input type="tel" placeholder="0780 000 000" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email (optional)</label>
+            <input type="email" placeholder="you@example.com"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <select required>
+              <option value="">Select time</option>
+              <option>07:00 AM – Breakfast</option>
+              <option>12:00 PM – Lunch</option>
+              <option>04:00 PM – Afternoon</option>
+              <option>07:00 PM – Dinner</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Guests</label>
+            <select required>
+              <option value="">Number of guests</option>
+              <option>1 guest</option>
+              <option>2 guests</option>
+              <option>3–4 guests</option>
+              <option>5–6 guests</option>
+              <option>7–10 guests</option>
+              <option>10+ guests (event)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Occasion</label>
+            <select>
+              <option value="">Select (optional)</option>
+              <option>Birthday</option>
+              <option>Anniversary</option>
+              <option>Business Lunch</option>
+              <option>Private Event</option>
+              <option>Just dining</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Special Requests</label>
+          <textarea placeholder="Dietary requirements, seating preferences, special arrangements…"></textarea>
+        </div>
+        <button type="submit" class="form-submit">Confirm Reservation →</button>
+        <p class="form-note">We'll confirm your reservation via WhatsApp or phone within 2 hours. For same-day bookings, please call us directly.</p>
+        <div class="success-msg" id="successMsg">
+          ✓ Your reservation request has been received! We'll confirm via WhatsApp shortly. We look forward to welcoming you to Lakeside.
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Lakeside Bar Beach & Restaurant</div>
+  <div class="footer-text">Ave de la Production, Gisenyi, Rwanda · Open Daily 6AM–11PM · © 2025</div>
+  <div class="footer-social">
+    <a href="#" class="social-btn">f</a>
+    <a href="#" class="social-btn">in</a>
+    <a href="#" class="social-btn">tw</a>
+  </div>
+</footer>
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.menu-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.menu-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function handleReserve(e) {
+  e.preventDefault();
+  const btn = document.querySelector('.form-submit');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+  setTimeout(() => {
+    document.getElementById('successMsg').style.display = 'block';
+    btn.textContent = 'Request Sent ✓';
+    e.target.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, 1200);
+}
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
