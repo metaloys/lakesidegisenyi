@@ -16,6 +16,14 @@ export default function handler(req, res) {
     return;
   }
 
+  // Debug: log what we actually have
+  console.log('[api/config] SUPABASE_URL:', process.env.SUPABASE_URL ? '✓ set' : '✗ MISSING');
+  console.log('[api/config] SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✓ set' : '✗ MISSING');
+  console.log('[api/config] WHATSAPP_NUMBER:', process.env.WHATSAPP_NUMBER ? '✓ set' : '✗ MISSING');
+  console.log('[api/config] EMAILJS_PUBLIC_KEY:', process.env.EMAILJS_PUBLIC_KEY ? '✓ set' : '✗ MISSING');
+  console.log('[api/config] EMAILJS_SERVICE_ID:', process.env.EMAILJS_SERVICE_ID ? '✓ set' : '✗ MISSING');
+  console.log('[api/config] EMAILJS_TEMPLATE_ID:', process.env.EMAILJS_TEMPLATE_ID ? '✓ set' : '✗ MISSING');
+
   // Return config from environment variables
   res.status(200).json({
     supabaseUrl: process.env.SUPABASE_URL,
