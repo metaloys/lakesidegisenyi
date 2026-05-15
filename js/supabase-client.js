@@ -37,27 +37,20 @@
   // ============================================================
 
   async function submitReservation(formData) {
-    const restaurant = await getRestaurant();
-    const { data, error } = await db
-      .from('reservations')
-      .insert({
-        restaurant_id:    restaurant.id,
-        first_name:       formData.firstName,
-        last_name:        formData.lastName,
-        phone:            formData.phone.replace(/\s/g, ''),
-        email:            formData.email || null,
-        date:             formData.date,
-        time_slot:        formData.timeSlot,
-        party_size:       parseInt(formData.partySize),
-        occasion:         formData.occasion || null,
-        special_requests: formData.specialRequests || null,
-        source:           'website',
-        status:           'pending'
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    // Call serverless function instead of direct Supabase insert
+    // This uses the service role key on the server (more secure)
+    const response = await fetch('/api/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create reservation');
+    }
+
+    return await response.json();
   }
 
   // ============================================================
