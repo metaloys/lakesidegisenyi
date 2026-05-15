@@ -24,10 +24,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { firstName, lastName, phone, email, date, timeSlot, partySize, occasion, specialRequests } = req.body;
+    // Check env vars
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[api/reservations] Missing Supabase env vars');
+      console.error('SUPABASE_URL:', process.env.SUPABASE_URL ? '✓' : '✗ MISSING');
+      console.error('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓' : '✗ MISSING');
+      res.status(500).json({ error: 'Server configuration error' });
+      return;
+    }
+
+    const formData = req.body;
+    const { firstName, lastName, phone, email, date, timeSlot, partySize, occasion, specialRequests } = formData;
+
+    console.log('[api/reservations] Received booking:', { firstName, lastName, phone, date });
 
     // Validate required fields
     if (!firstName || !lastName || !phone || !date || !timeSlot || !partySize) {
+      console.error('[api/reservations] Missing required fields');
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
@@ -44,13 +57,20 @@ export default async function handler(req, res) {
       .select('id')
       .limit(1);
 
-    if (restaurantError || !restaurants?.length) {
-      console.error('Restaurant fetch error:', restaurantError);
+    if (restaurantError) {
+      console.error('[api/reservations] Restaurant fetch error:', restaurantError);
       res.status(500).json({ error: 'Could not find restaurant' });
       return;
     }
 
+    if (!restaurants?.length) {
+      console.error('[api/reservations] No restaurants found');
+      res.status(500).json({ error: 'No restaurants configured' });
+      return;
+    }
+
     const restaurantId = restaurants[0].id;
+    console.log('[api/reservations] Using restaurant ID:', restaurantId);
 
     // Insert reservation
     const { data, error } = await supabase
@@ -73,14 +93,15 @@ export default async function handler(req, res) {
       .single();
 
     if (error) {
-      console.error('Insert error:', error);
+      console.error('[api/reservations] Insert error:', error);
       res.status(400).json({ error: error.message || 'Failed to create reservation' });
       return;
     }
 
+    console.log('[api/reservations] ✓ Reservation created:', data.id);
     res.status(200).json(data);
   } catch (err) {
-    console.error('Unexpected error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('[api/reservations] Unexpected error:', err.message || err);
+    res.status(500).json({ error: 'Server error: ' + (err.message || 'Unknown') });
   }
 }
