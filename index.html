@@ -97,84 +97,13 @@
       <div class="section-label">Our Menu</div>
       <h2 class="section-title">Crafted with <em>Passion</em></h2>
     </div>
-    <div class="menu-tabs reveal">
-      <button class="menu-tab active" onclick="switchTab('food', this)">Food</button>
-      <button class="menu-tab" onclick="switchTab('drinks', this)">Drinks & Bar</button>
-      <button class="menu-tab" onclick="switchTab('breakfast', this)">Breakfast</button>
+    <!-- Tabs — injected dynamically by landing.js -->
+    <div class="menu-tabs reveal" id="menu-tabs">
+      <div style="font-size:0.78rem;color:var(--text-muted);padding:0.8rem 0;">Loading menu…</div>
     </div>
 
-    <div id="tab-food" class="menu-panel active menu-grid reveal">
-      <div class="menu-item">
-        <div><span class="menu-name">Tilapia du Lac</span><span class="menu-desc">Fresh Lake Kivu tilapia, lemon herb butter, seasonal vegetables</span></div>
-        <span class="menu-price">RWF 8,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Brochettes Royales</span><span class="menu-desc">Premium beef skewers, chimichurri, roasted cassava chips</span></div>
-        <span class="menu-price">RWF 7,000</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Prawn Beach Platter</span><span class="menu-desc">Grilled lake prawns, garlic butter, avocado salsa, lime</span></div>
-        <span class="menu-price">RWF 11,000</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Isombe & Goat</span><span class="menu-desc">Traditional cassava leaves, slow-braised goat, plantain</span></div>
-        <span class="menu-price">RWF 6,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Beach Burger</span><span class="menu-desc">200g beef patty, caramelised onions, local cheese, brioche</span></div>
-        <span class="menu-price">RWF 5,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Vegetarian Mezze</span><span class="menu-desc">Roasted seasonal vegetables, hummus, flatbread, salad</span></div>
-        <span class="menu-price">RWF 5,000</span>
-      </div>
-    </div>
-
-    <div id="tab-drinks" class="menu-panel menu-grid reveal">
-      <div class="menu-item">
-        <div><span class="menu-name">Lake Kivu Sunset</span><span class="menu-desc">Passion fruit, rum, ginger beer, fresh mint, chilli rim</span></div>
-        <span class="menu-price">RWF 4,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Amarula Lakeside</span><span class="menu-desc">Amarula, espresso, cream, dark chocolate shavings</span></div>
-        <span class="menu-price">RWF 4,000</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Primus Draught</span><span class="menu-desc">Rwanda's finest lager, ice cold, served in a frosted glass</span></div>
-        <span class="menu-price">RWF 1,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">House Red / White</span><span class="menu-desc">Curated South African & French selection, glass pour</span></div>
-        <span class="menu-price">RWF 3,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Fresh Mango Crush</span><span class="menu-desc">Blended mango, lime, honey, sparkling water, mint</span></div>
-        <span class="menu-price">RWF 2,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Rwandan Coffee</span><span class="menu-desc">Single origin, specialty roast — flat white, latte or filter</span></div>
-        <span class="menu-price">RWF 2,000</span>
-      </div>
-    </div>
-
-    <div id="tab-breakfast" class="menu-panel menu-grid reveal">
-      <div class="menu-item">
-        <div><span class="menu-name">Full Beach Breakfast</span><span class="menu-desc">Eggs your way, bacon, toast, fruit, fresh juice, coffee</span></div>
-        <span class="menu-price">RWF 7,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Avocado Toast</span><span class="menu-desc">Sourdough, smashed avocado, poached egg, chilli flakes</span></div>
-        <span class="menu-price">RWF 4,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Tropical Fruit Bowl</span><span class="menu-desc">Seasonal Rwandan fruits, yoghurt, granola, honey drizzle</span></div>
-        <span class="menu-price">RWF 3,500</span>
-      </div>
-      <div class="menu-item">
-        <div><span class="menu-name">Omelette du Lac</span><span class="menu-desc">Three-egg omelette, smoked tilapia, herbs, grilled tomato</span></div>
-        <span class="menu-price">RWF 5,000</span>
-      </div>
-    </div>
+    <!-- Panels — injected dynamically by landing.js -->
+    <div id="menu-panels"></div>
   </div>
 </div>
 
@@ -365,6 +294,8 @@
     <a href="#" class="social-btn">f</a>
     <a href="#" class="social-btn">in</a>
     <a href="#" class="social-btn">tw</a>
+    <a href="#" class="social-btn">in</a>
+    <a href="#" class="social-btn">tik</a>
   </div>
 </footer>
 <a href="https://wa.me/250788202475" class="wa-float" aria-label="Chat on WhatsApp">
