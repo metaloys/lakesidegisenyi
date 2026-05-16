@@ -54,8 +54,8 @@ function statusPill(s){
   return `<span class="status-pill ${s}">${s}</span>`;
 }
 function actionBtns(id,status){
-  if(status==='pending') return `<div class="action-row"><button class="act-btn confirm-btn" onclick="confirmRes(${id})">Confirm</button><button class="act-btn cancel-btn" onclick="cancelRes(${id})">Cancel</button></div>`;
-  if(status==='confirmed') return `<div class="action-row"><button class="act-btn" onclick="seatRes(${id})">Seat</button></div>`;
+  if(status==='pending') return `<div class="action-row"><button class="act-btn confirm-btn" onclick="confirmRes('${id}')">Confirm</button><button class="act-btn cancel-btn" onclick="cancelRes('${id}')">Cancel</button></div>`;
+  if(status==='confirmed') return `<div class="action-row"><button class="act-btn" onclick="seatRes('${id}')">Seat</button></div>`;
   return `<div class="action-row"><button class="act-btn" style="opacity:0.4;cursor:default;">—</button></div>`;
 }
 
