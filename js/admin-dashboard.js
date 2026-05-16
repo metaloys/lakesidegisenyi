@@ -271,31 +271,202 @@ function renderCharts(){
 // ── MENU EDITOR ──
 async function loadAndRenderMenu() {
   try {
-    const menu = await getMenuItems();
+    const [menu, cats] = await Promise.all([getMenuItems(), getMenuCategories()]);
     window.__menuItems = menu || [];
+    window.__menuCategories = cats || [];
     renderMenu();
   } catch (error) {
     console.error('Error loading menu:', error);
     showToast('Error loading menu items');
     window.__menuItems = [];
+    window.__menuCategories = [];
     renderMenu();
   }
 }
 
-function renderMenu(){
+function renderMenu() {
   const menuItems = window.__menuItems || [];
+  const grid = document.getElementById('menu-items-grid');
+
   if (menuItems.length === 0) {
-    document.getElementById('menu-items-grid').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-dim);">No menu items available</div>`;
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-dim);">
+      No menu items found. Add your first item below.
+    </div>`;
     return;
   }
-  document.getElementById('menu-items-grid').innerHTML=menuItems.map(m=>`
-    <div style="border:1px solid var(--border);padding:0.9rem;background:var(--surface2);">
-      <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.3rem;">${m.menu_categories?.name || 'Item'}</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--text);margin-bottom:0.4rem;">${m.name}</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--gold);">${m.currency} ${m.price}</div>
-      <div style="display:flex;gap:0.4rem;margin-top:0.7rem;">
-        <button class="act-btn" style="flex:1;" onclick="showToast('Edit feature coming soon')">Edit</button>
-        <button class="act-btn cancel-btn" onclick="showToast('Item removed')">✕</button>
+
+  grid.innerHTML = menuItems.map(m => `
+    <div id="menu-card-${m.id}" style="border:1px solid var(--border);padding:0.9rem;background:var(--surface2);position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem;">
+        <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);">
+          ${m.menu_categories?.name || 'Uncategorized'}
+        </div>
+        <span style="font-size:0.6rem;padding:2px 7px;${m.is_available
+          ? 'background:var(--green-bg);color:var(--green);'
+          : 'background:var(--red-bg);color:var(--red);'}">
+          ${m.is_available ? 'Available' : 'Unavailable'}
+        </span>
+      </div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--text);margin-bottom:0.25rem;">${m.name}</div>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.5rem;line-height:1.5;">${m.description || ''}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--gold);margin-bottom:0.75rem;">${m.currency} ${Number(m.price).toLocaleString()}</div>
+      <div style="display:flex;gap:0.4rem;">
+        <button class="act-btn" style="flex:1;" onclick="openEditModal('${m.id}')">Edit</button>
+        <button class="act-btn" onclick="toggleAvailability('${m.id}', ${!m.is_available})"
+          style="color:${m.is_available ? 'var(--amber)' : 'var(--green)'}">
+          ${m.is_available ? 'Hide' : 'Show'}
+        </button>
+        <button class="act-btn cancel-btn" onclick="confirmDeleteItem('${m.id}', '${m.name.replace(/'/g, "\\'")}')">✕</button>
       </div>
     </div>`).join('');
+}
+
+// ── TOGGLE AVAILABILITY ──
+async function toggleAvailability(id, newState) {
+  try {
+    await toggleMenuItemAvailability(id, newState);
+    const item = (window.__menuItems || []).find(m => m.id === id);
+    if (item) {
+      item.is_available = newState;
+      renderMenu();
+      showToast(`${item.name} ${newState ? 'now visible' : 'hidden from menu'} ✓`);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Error updating item');
+  }
+}
+
+// ── DELETE ──
+async function confirmDeleteItem(id, name) {
+  if (!confirm(`Delete "${name}" from the menu?\n\nThis cannot be undone.`)) return;
+  try {
+    await deleteMenuItem(id);
+    window.__menuItems = (window.__menuItems || []).filter(m => m.id !== id);
+    renderMenu();
+    showToast(`${name} deleted ✓`);
+  } catch (err) {
+    console.error(err);
+    showToast('Error deleting item: ' + err.message);
+  }
+}
+
+// ── EDIT MODAL ──
+function openEditModal(id) {
+  const item = (window.__menuItems || []).find(m => m.id === id);
+  if (!item) return;
+
+  // Remove any existing modal
+  document.getElementById('menu-modal')?.remove();
+
+  const cats = window.__menuCategories || [];
+  const catOptions = cats.map(c =>
+    `<option value="${c.id}" ${c.id === item.category_id ? 'selected' : ''}>${c.name}</option>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'menu-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(13,27,30,0.85);
+    display:flex;align-items:center;justify-content:center;z-index:999;
+    backdrop-filter:blur(4px);
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border-strong);
+      width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+        <span style="font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">
+          Edit Menu Item
+        </span>
+        <button onclick="document.getElementById('menu-modal').remove()"
+          style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;">✕</button>
+      </div>
+      <div style="padding:1.25rem;display:flex;flex-direction:column;gap:0.9rem;">
+        <div>
+          <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Item Name</label>
+          <input id="edit-name" value="${item.name}"
+            style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+            padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;width:100%;outline:none;"
+            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"/>
+        </div>
+        <div>
+          <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Description</label>
+          <textarea id="edit-desc"
+            style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+            padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;
+            width:100%;outline:none;resize:none;height:70px;"
+            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"
+            >${item.description || ''}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div>
+            <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Price (RWF)</label>
+            <input id="edit-price" type="number" value="${item.price}"
+              style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+              padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;width:100%;outline:none;"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"/>
+          </div>
+          <div>
+            <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Category</label>
+            <select id="edit-category"
+              style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
+              padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;width:100%;outline:none;">
+              ${catOptions}
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+          <button onclick="saveMenuItem('${id}')"
+            style="flex:1;background:var(--gold);color:var(--deep);border:none;padding:0.7rem;
+            font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:500;
+            letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
+            Save Changes
+          </button>
+          <button onclick="document.getElementById('menu-modal').remove()"
+            style="flex:1;background:none;border:1px solid var(--border);color:var(--text-muted);
+            padding:0.7rem;font-family:'DM Sans',sans-serif;font-size:0.72rem;
+            letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Close on backdrop click
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function saveMenuItem(id) {
+  const name     = document.getElementById('edit-name')?.value.trim();
+  const desc     = document.getElementById('edit-desc')?.value.trim();
+  const price    = parseFloat(document.getElementById('edit-price')?.value);
+  const catId    = document.getElementById('edit-category')?.value;
+
+  if (!name) { showToast('Name is required'); return; }
+  if (isNaN(price) || price < 0) { showToast('Enter a valid price'); return; }
+
+  const saveBtn = document.querySelector('#menu-modal button[onclick^="saveMenuItem"]');
+  if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
+
+  try {
+    const updated = await updateMenuItem(id, {
+      name,
+      description: desc || null,
+      price,
+      category_id: catId || null,
+    });
+
+    // Update local cache
+    const idx = (window.__menuItems || []).findIndex(m => m.id === id);
+    if (idx !== -1) window.__menuItems[idx] = { ...window.__menuItems[idx], ...updated };
+
+    document.getElementById('menu-modal')?.remove();
+    renderMenu();
+    showToast(`${name} updated ✓`);
+  } catch (err) {
+    console.error(err);
+    showToast('Save failed: ' + err.message);
+    if (saveBtn) { saveBtn.textContent = 'Save Changes'; saveBtn.disabled = false; }
+  }
 }

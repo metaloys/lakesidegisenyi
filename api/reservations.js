@@ -1,107 +1,98 @@
 /**
  * /api/reservations
- * Handles booking submissions securely using Supabase service role key
- * This is more secure than exposing the anon key with RLS
+ * Creates a reservation using Supabase REST API directly (no npm import needed).
+ * Uses service role key to bypass RLS — safe because this runs server-side only.
  */
 
-import { createClient } from '@supabase/supabase-js';
-
 export default async function handler(req, res) {
-  // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
+  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
 
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    console.error('[reservations] Missing env vars — SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    res.status(500).json({ error: 'Server configuration error' });
+    return;
+  }
+
   try {
-    // Check env vars
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('[api/reservations] Missing Supabase env vars');
-      console.error('SUPABASE_URL:', process.env.SUPABASE_URL ? '✓' : '✗ MISSING');
-      console.error('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓' : '✗ MISSING');
-      res.status(500).json({ error: 'Server configuration error' });
-      return;
-    }
+    const { firstName, lastName, phone, email, date, timeSlot,
+            partySize, occasion, specialRequests } = req.body || {};
 
-    const formData = req.body;
-    const { firstName, lastName, phone, email, date, timeSlot, partySize, occasion, specialRequests } = formData;
-
-    console.log('[api/reservations] Received booking:', { firstName, lastName, phone, date });
-
-    // Validate required fields
+    // ── Validate required fields ──
     if (!firstName || !lastName || !phone || !date || !timeSlot || !partySize) {
-      console.error('[api/reservations] Missing required fields');
-      res.status(400).json({ error: 'Missing required fields' });
+      res.status(400).json({ error: 'Missing required fields: firstName, lastName, phone, date, timeSlot, partySize' });
       return;
     }
 
-    // Create Supabase client with service role key (admin permissions)
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
+    const headers = {
+      'Content-Type':  'application/json',
+      'apikey':        SERVICE_KEY,
+      'Authorization': `Bearer ${SERVICE_KEY}`,
+    };
+
+    // ── Get restaurant ID ──
+    const restRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/restaurants?slug=eq.lakeside-gisenyi&select=id&limit=1`,
+      { headers }
     );
+    const restaurants = await restRes.json();
 
-    // Get restaurant (assume first one for now)
-    const { data: restaurants, error: restaurantError } = await supabase
-      .from('restaurants')
-      .select('id')
-      .limit(1);
-
-    if (restaurantError) {
-      console.error('[api/reservations] Restaurant fetch error:', restaurantError);
-      res.status(500).json({ error: 'Could not find restaurant' });
-      return;
-    }
-
-    if (!restaurants?.length) {
-      console.error('[api/reservations] No restaurants found');
-      res.status(500).json({ error: 'No restaurants configured' });
+    if (!restRes.ok || !restaurants?.length) {
+      console.error('[reservations] Restaurant not found:', restaurants);
+      res.status(500).json({ error: 'Restaurant not found. Check slug in database.' });
       return;
     }
 
     const restaurantId = restaurants[0].id;
-    console.log('[api/reservations] Using restaurant ID:', restaurantId);
 
-    // Insert reservation
-    const { data, error } = await supabase
-      .from('reservations')
-      .insert({
-        restaurant_id: restaurantId,
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone.replace(/\s/g, ''),
-        email: email || null,
-        date: date,
-        time_slot: timeSlot,
-        party_size: parseInt(partySize),
-        occasion: occasion || null,
-        special_requests: specialRequests || null,
-        source: 'website',
-        status: 'pending',
-      })
-      .select()
-      .single();
+    // ── Insert reservation ──
+    const insertRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/reservations`,
+      {
+        method:  'POST',
+        headers: { ...headers, 'Prefer': 'return=representation' },
+        body: JSON.stringify({
+          restaurant_id:    restaurantId,
+          first_name:       firstName,
+          last_name:        lastName,
+          phone:            phone.replace(/\s/g, ''),
+          email:            email       || null,
+          date:             date,
+          time_slot:        timeSlot,
+          party_size:       parseInt(partySize),
+          occasion:         occasion    || null,
+          special_requests: specialRequests || null,
+          source:           'website',
+          status:           'pending',
+        }),
+      }
+    );
 
-    if (error) {
-      console.error('[api/reservations] Insert error:', error);
-      res.status(400).json({ error: error.message || 'Failed to create reservation' });
+    const result = await insertRes.json();
+
+    if (!insertRes.ok) {
+      console.error('[reservations] Insert failed:', result);
+      res.status(400).json({ error: result?.message || 'Failed to save reservation' });
       return;
     }
 
-    console.log('[api/reservations] ✓ Reservation created:', data.id);
-    res.status(200).json(data);
+    const reservation = Array.isArray(result) ? result[0] : result;
+    console.log('[reservations] ✓ Created:', reservation.id);
+    res.status(200).json(reservation);
+
   } catch (err) {
-    console.error('[api/reservations] Unexpected error:', err.message || err);
-    res.status(500).json({ error: 'Server error: ' + (err.message || 'Unknown') });
+    console.error('[reservations] Unexpected error:', err.message);
+    res.status(500).json({ error: 'Server error: ' + err.message });
   }
 }

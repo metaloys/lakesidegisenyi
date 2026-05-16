@@ -175,8 +175,51 @@
       .from('menu_items')
       .select('id, name, description, price, currency, category_id, image_url, is_available, is_featured, menu_categories(name)')
       .eq('restaurant_id', restaurant.id)
-      .eq('is_available', true)
       .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function updateMenuItem(itemId, updates) {
+    const { data, error } = await db
+      .from('menu_items')
+      .update(updates)
+      .eq('id', itemId)
+      .select('id, name, description, price, currency, is_available, is_featured, menu_categories(name)')
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function deleteMenuItem(itemId) {
+    const { error } = await db.from('menu_items').delete().eq('id', itemId);
+    if (error) throw error;
+    return true;
+  }
+
+  async function toggleMenuItemAvailability(itemId, isAvailable) {
+    return updateMenuItem(itemId, { is_available: isAvailable });
+  }
+
+  async function addMenuItem(fields) {
+    const restaurant = await getRestaurant();
+    const { data, error } = await db
+      .from('menu_items')
+      .insert({ ...fields, restaurant_id: restaurant.id })
+      .select('id, name, description, price, currency, is_available, is_featured, menu_categories(name)')
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function getMenuCategories() {
+    const restaurant = await getRestaurant();
+    const { data, error } = await db
+      .from('menu_categories')
+      .select('id, name, sort_order')
+      .eq('restaurant_id', restaurant.id)
+      .eq('is_active', true)
+      .order('sort_order');
     if (error) throw error;
     return data || [];
   }
@@ -247,6 +290,11 @@
   window.addInternalNote = addInternalNote;
   window.searchReservations = searchReservations;
   window.getMenuItems = getMenuItems;
+  window.updateMenuItem = updateMenuItem;
+  window.deleteMenuItem = deleteMenuItem;
+  window.toggleMenuItemAvailability = toggleMenuItemAvailability;
+  window.addMenuItem = addMenuItem;
+  window.getMenuCategories = getMenuCategories;
 
   // Export as LakesideAuth object for admin dashboard
   window.LakesideAuth = {
@@ -273,6 +321,11 @@
 
     // Menu
     getMenuItems,
+    updateMenuItem,
+    deleteMenuItem,
+    toggleMenuItemAvailability,
+    addMenuItem,
+    getMenuCategories,
 
     // Auth
     signIn,
