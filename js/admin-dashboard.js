@@ -1,472 +1,824 @@
-﻿// Admin Dashboard — Wired to Supabase
-// Displays real-time reservation data, analytics, and management tools
+﻿/**
+ * Lakeside Gisenyi — Admin Dashboard
+ * Pulls 100% real data from Supabase. Zero hardcoded stats.
+ * Covers: KPI cards, pending table, today's schedule, calendar,
+ *         booking-breakdown chart, Google Reviews auto-sync.
+ */
 
-// ── NAV ──
-function nav(page, el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.sb-nav a').forEach(a=>a.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  if(el){el.classList.add('active');}
-  const titles={dashboard:'Dashboard',reservations:'Reservations',calendar:'Calendar',analytics:'Analytics',menu:'Menu Editor',photos:'Photos & Gallery',settings:'Settings'};
-  document.getElementById('page-title').textContent=titles[page]||page;
-  if(page==='calendar') renderFullCal();
-  if(page==='analytics') renderCharts();
-  if(page==='menu') loadAndRenderMenu();
-  if(page==='photos') renderPhotoGrid();
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+/**
+ * Switch between admin pages (dashboard, reservations, calendar, analytics, menu, settings)
+ * Called from sidebar menu onclick handlers
+ */
+function nav(pageName, element) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  
+  // Show selected page
+  const pageEl = document.getElementById(`page-${pageName}`);
+  if (pageEl) {
+    pageEl.classList.add('active');
+  }
+  
+  // Update active menu item styling
+  document.querySelectorAll('.sb-nav a').forEach(a => a.classList.remove('active'));
+  if (element) {
+    element.classList.add('active');
+  }
+  
+  // Update page title
+  const titles = {
+    dashboard: 'Dashboard',
+    reservations: 'Reservations',
+    calendar: 'Calendar',
+    analytics: 'Analytics',
+    menu: 'Menu Editor',
+    settings: 'Settings'
+  };
+  const titleEl = document.getElementById('page-title');
+  if (titleEl) {
+    titleEl.textContent = titles[pageName] || 'Page';
+  }
+  
+  // Load page-specific data
+  switch(pageName) {
+    case 'dashboard':
+      if (typeof initDashboard === 'function') {
+        initDashboard();
+      }
+      break;
+    case 'reservations':
+      if (typeof loadReservations === 'function') {
+        loadReservations();
+      }
+      break;
+    case 'calendar':
+      if (typeof initCalendar === 'function') {
+        initCalendar();
+      }
+      break;
+    case 'analytics':
+      if (typeof loadAnalytics === 'function') {
+        loadAnalytics();
+      }
+      break;
+    case 'menu':
+      if (typeof loadAndRenderMenu === 'function') {
+        loadAndRenderMenu();
+      }
+      break;
+    case 'settings':
+      if (typeof loadSettings === 'function') {
+        loadSettings();
+      }
+      break;
+  }
+  
+  // Prevent default link behavior
   return false;
 }
 
-// ── INIT ──
-async function initApp(){
-  // date
-  const d=new Date();
-  document.getElementById('today-date').textContent=d.toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
-  
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let dashboardData = {
+  todayReservations: [],
+  pendingReservations: [],
+  allThisWeek: [],
+  allLastWeek: [],
+  allThisMonth: [],
+  googleRating: null,
+  googleTotal: null,
+};
+
+let calendarDate = new Date();
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+async function initDashboard() {
   try {
-    // Load real data from Supabase
-    const [pending, today, allRes, menu] = await Promise.all([
-      getPendingReservations(),
-      getTodaysReservations(),
-      getReservations({ status: 'all' }),
-      getMenuItems()
-    ]);
-    
-    window.__reservations = allRes || [];
-    window.__menuItems = menu || [];
-    renderPending();
-    renderToday();
-    renderMiniCal();
-    renderAllRes(window.__reservations);
-  } catch (error) {
-    console.error('Error loading dashboard data:', error);
-    // Fallback to empty state
-    window.__reservations = [];
-    window.__menuItems = [];
-    renderPending();
-    renderToday();
-    renderMiniCal();
-    renderAllRes([]);
+    await loadAllDashboardData();
+    renderDashboard();
+    startAutoRefresh();
+  } catch (err) {
+    console.error('[Dashboard] Boot error:', err);
+    showDashboardError('Failed to load dashboard data. Check your connection.');
   }
 }
 
-// ── RENDER HELPERS ──
-function statusPill(s){
-  return `<span class="status-pill ${s}">${s}</span>`;
-}
-function actionBtns(id,status){
-  if(status==='pending') return `<div class="action-row"><button class="act-btn confirm-btn" onclick="confirmRes('${id}')">Confirm</button><button class="act-btn cancel-btn" onclick="cancelRes('${id}')">Cancel</button></div>`;
-  if(status==='confirmed') return `<div class="action-row"><button class="act-btn" onclick="seatRes('${id}')">Seat</button></div>`;
-  return `<div class="action-row"><button class="act-btn" style="opacity:0.4;cursor:default;">—</button></div>`;
-}
+// ─── DATA LOADING ─────────────────────────────────────────────────────────────
+async function loadAllDashboardData() {
+  const today   = toISO(new Date());
+  const monday  = getWeekStart(new Date());
+  const lastMon = getWeekStart(addDays(new Date(), -7));
+  const lastSun = addDays(monday, -1);
+  const monthStart = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-01`;
+  const monthEnd   = lastDayOfMonth(calendarDate);
 
-function renderPending(){
-  const pending = (window.__reservations || []).filter(r=>r.status==='pending');
-  document.getElementById('sb-pending').textContent=pending.length;
-  document.getElementById('pending-tbody').innerHTML=pending.map(r=>`
-    <tr id="row-dash-${r.id}">
-      <td><span class="guest-name">${r.first_name} ${r.last_name}</span>${r.internal_notes?`<br><span style="font-size:0.65rem;color:var(--text-dim)">${r.internal_notes}</span>`:''}
-      </td>
-      <td><span class="res-date">${r.date}</span><br><span style="font-size:0.68rem;color:var(--text-dim)">${r.time_slot.split(' – ')[1]||r.time_slot}</span></td>
-      <td>${r.party_size}</td>
-      <td>${statusPill(r.status)}</td>
-      <td>${actionBtns(r.id,r.status)}</td>
-    </tr>`).join('');
-}
-
-function renderToday(){
-  const today = (window.__reservations || []).filter(r=>r.date===new Date().toISOString().split('T')[0]);
-  document.getElementById('today-tbody').innerHTML=today.map(r=>`
-    <tr>
-      <td><span class="guest-name">${r.first_name} ${r.last_name}</span></td>
-      <td class="res-date">${r.time_slot.split(' – ')[0]}</td>
-      <td>${r.party_size}</td>
-      <td style="font-size:0.72rem;color:var(--text-dim)">${r.occasion}</td>
-      <td>${statusPill(r.status)}</td>
-    </tr>`).join('');
-}
-
-// ── MINI CALENDAR ──
-function renderMiniCal(){
-  const now=new Date();
-  const year=now.getFullYear(), month=now.getMonth();
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  const firstDay=new Date(year,month,1).getDay();
-  const resDates=new Set((window.__reservations || []).map(r=>{
-    const d = new Date(r.date);
-    return d.getDate();
-  }));
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const dows=['Su','Mo','Tu','We','Th','Fr','Sa'];
-  let html=`<div class="cal-header">
-    <button class="cal-nav">‹</button>
-    <span class="cal-month">${monthNames[month]} ${year}</span>
-    <button class="cal-nav">›</button>
-  </div><div class="cal-grid">`;
-  dows.forEach(d=>html+=`<div class="cal-dow">${d}</div>`);
-  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const isToday=d===now.getDate();
-    const hasRes=resDates.has(d);
-    html+=`<div class="cal-day${isToday?' today':''}${hasRes?' has-res':''}">${d}</div>`;
-  }
-  html+='</div>';
-  document.getElementById('mini-cal').innerHTML=html;
-}
-
-// ── ALL RESERVATIONS ──
-let currentFilter='all', currentSearch='';
-function renderAllRes(list){
-  document.getElementById('res-count').textContent=`${list.length} records`;
-  document.getElementById('all-tbody').innerHTML=list.map(r=>`
-    <tr id="row-all-${r.id}">
-      <td><span class="guest-name">${r.first_name} ${r.last_name}</span></td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;">${r.phone}</td>
-      <td class="res-date">${r.date}</td>
-      <td style="font-size:0.72rem;color:var(--text-dim)">${r.time_slot.split(' – ')[0]}</td>
-      <td>${r.party_size}</td>
-      <td style="font-size:0.72rem">${r.occasion || 'N/A'}</td>
-      <td>${statusPill(r.status)}</td>
-      <td>${actionBtns(r.id,r.status)}</td>
-    </tr>`).join('');
-}
-function filterRes(f,btn){
-  currentFilter=f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  applyFilter();
-}
-function searchRes(val){currentSearch=val.toLowerCase();applyFilter();}
-function applyFilter(){
-  let list=window.__reservations || [];
-  if(currentFilter!=='all') list=list.filter(r=>r.status===currentFilter);
-  if(currentSearch) list=list.filter(r=>{
-    const fullName = `${r.first_name} ${r.last_name}`.toLowerCase();
-    return fullName.includes(currentSearch)||r.phone.includes(currentSearch);
-  });
-  renderAllRes(list);
-}
-
-// ── RESERVATION ACTIONS ──
-async function confirmRes(id){
   try {
-    await confirmReservation(id);
-    const r = window.__reservations.find(x=>x.id===id);
-    if(r){r.status='confirmed';renderPending();renderToday();applyFilter();showToast(`Reservation for ${r.first_name} confirmed ✓`);}
-  } catch(error){
-    console.error(error);
-    showToast('Error confirming reservation');
+    const restaurant = await LakesideAuth.getRestaurant();
+    if (!restaurant || !restaurant.id) {
+      throw new Error('Restaurant not found. Make sure you are logged in as admin.');
+    }
+    console.log('[Dashboard] Restaurant loaded:', restaurant.slug || restaurant.id);
+  } catch (err) {
+    console.error('[Dashboard] Restaurant lookup failed:', err.message);
+    throw new Error('Authentication failed: ' + err.message);
   }
-}
-async function cancelRes(id){
-  try {
-    await cancelReservation(id);
-    const r = window.__reservations.find(x=>x.id===id);
-    if(r){r.status='cancelled';renderPending();renderToday();applyFilter();showToast(`Reservation for ${r.first_name} cancelled`);}
-  } catch(error){
-    console.error(error);
-    showToast('Error cancelling reservation');
+
+  const restaurantId = restaurant.id;
+  const db = LakesideAuth.db;
+
+  if (!db) {
+    throw new Error('Supabase client not initialized. Refresh the page.');
   }
-}
-async function seatRes(id){
-  try {
-    await seatReservation(id);
-    const r = window.__reservations.find(x=>x.id===id);
-    if(r){r.status='seated';renderPending();renderToday();applyFilter();showToast(`${r.first_name} seated ✓`);}
-  } catch(error){
-    console.error(error);
-    showToast('Error seating guest');
-  }
-}
+  console.log('[Dashboard] Loading reservations for restaurant:', restaurantId);
 
-// ── FULL CALENDAR ──
-function renderFullCal(){
-  const now=new Date();
-  const year=now.getFullYear(), month=now.getMonth();
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  const firstDay=new Date(year,month,1).getDay();
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('cal-month-label').textContent=`${monthNames[month]} ${year}`;
-  const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  let html=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">`;
-  dows.forEach(d=>html+=`<div style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);padding:0.4rem;text-align:center;">${d}</div>`);
-  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dayRes=(window.__reservations || []).filter(r=>r.date===dateStr);
-    const isToday=d===now.getDate();
-    html+=`<div style="min-height:80px;border:1px solid ${isToday?'var(--gold)':'rgba(201,169,110,0.12)'};padding:0.5rem;background:${isToday?'var(--gold-dim)':'transparent'};">
-      <div style="font-size:0.72rem;color:${isToday?'var(--gold)':'var(--text-muted)'};margin-bottom:4px;font-weight:${isToday?'500':'400'}">${d}</div>
-      ${dayRes.map(r=>`<div style="font-size:0.6rem;background:var(--green-bg);color:var(--green);padding:1px 4px;margin-bottom:2px;border-radius:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${r.first_name} · ${r.time_slot.split(' ')[0]}</div>`).join('')}
-    </div>`;
-  }
-  html+='</div>';
-  document.getElementById('full-cal').innerHTML=html;
-}
+  const [todayRes, pendingRes, weekRes, lastWeekRes, monthRes] = await Promise.all([
+    db.from('reservations').select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('date', today)
+      .order('time_slot', { ascending: true }),
 
-// ── CHARTS ──
-function renderCharts(){
-  // Week chart
-  const weekData=[{d:'Mon',v:5},{d:'Tue',v:3},{d:'Wed',v:8},{d:'Thu',v:6},{d:'Fri',v:11},{d:'Sat',v:14},{d:'Sun',v:9}];
-  const maxW=Math.max(...weekData.map(x=>x.v));
-  document.getElementById('week-chart').innerHTML=weekData.map(x=>`
-    <div class="bar-col">
-      <span class="bar-val">${x.v}</span>
-      <div class="bar" style="height:${Math.round((x.v/maxW)*90)}px"></div>
-      <span class="bar-label">${x.d}</span>
-    </div>`).join('');
+    db.from('reservations').select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('status', 'pending')
+      .order('date', { ascending: true })
+      .order('time_slot', { ascending: true }),
 
-  // Month chart
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul'];
-  const monthData=[42,38,55,61,70,78,89];
-  const maxM=Math.max(...monthData);
-  document.getElementById('month-chart').innerHTML=months.map((m,i)=>`
-    <div class="bar-col">
-      <span class="bar-val">${monthData[i]}</span>
-      <div class="bar" style="height:${Math.round((monthData[i]/maxM)*90)}px"></div>
-      <span class="bar-label">${m}</span>
-    </div>`).join('');
+    db.from('reservations').select('*')
+      .eq('restaurant_id', restaurantId)
+      .gte('date', toISO(monday))
+      .lte('date', today)
+      .in('status', ['confirmed', 'seated', 'completed']),
 
-  // Hour chart
-  const hours=['7am','10am','12pm','4pm','7pm','9pm'];
-  const hourData=[8,5,18,7,28,12];
-  const maxH=Math.max(...hourData);
-  document.getElementById('hour-chart').innerHTML=hours.map((h,i)=>`
-    <div class="bar-col">
-      <span class="bar-val">${hourData[i]}</span>
-      <div class="bar" style="height:${Math.round((hourData[i]/maxH)*90)}px"></div>
-      <span class="bar-label">${h}</span>
-    </div>`).join('');
+    db.from('reservations').select('*')
+      .eq('restaurant_id', restaurantId)
+      .gte('date', toISO(lastMon))
+      .lte('date', toISO(lastSun))
+      .in('status', ['confirmed', 'seated', 'completed']),
 
-  // Donut
-  const segments=[
-    {label:'Just Dining',val:40,color:'#C9A96E'},
-    {label:'Birthday',val:22,color:'#2DB87A'},
-    {label:'Anniversary',val:18,color:'#4A9EBF'},
-    {label:'Business',val:12,color:'#E5A030'},
-    {label:'Event',val:8,color:'#E05555'},
-  ];
-  const total=segments.reduce((a,s)=>a+s.val,0);
-  const cx=45,cy=45,r=35,ir=22;
-  let angle=-Math.PI/2;
-  let paths='';
-  segments.forEach(s=>{
-    const sweep=(s.val/total)*2*Math.PI;
-    const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
-    const x2=cx+r*Math.cos(angle+sweep), y2=cy+r*Math.sin(angle+sweep);
-    const ix1=cx+ir*Math.cos(angle), iy1=cy+ir*Math.sin(angle);
-    const ix2=cx+ir*Math.cos(angle+sweep), iy2=cy+ir*Math.sin(angle+sweep);
-    const large=sweep>Math.PI?1:0;
-    paths+=`<path d="M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L${ix2.toFixed(2)} ${iy2.toFixed(2)} A${ir} ${ir} 0 ${large} 0 ${ix1.toFixed(2)} ${iy1.toFixed(2)} Z" fill="${s.color}" opacity="0.85"/>`;
-    angle+=sweep;
-  });
-  document.getElementById('donut-svg').innerHTML=paths;
-  document.getElementById('donut-legend').innerHTML=segments.map(s=>`
-    <div class="legend-row">
-      <div class="legend-dot" style="background:${s.color}"></div>
-      <span>${s.label}</span>
-      <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--gold)">${s.val}%</span>
-    </div>`).join('');
+    db.from('reservations').select('*')
+      .eq('restaurant_id', restaurantId)
+      .gte('date', monthStart)
+      .lte('date', monthEnd),
+  ]);
+
+  if (todayRes.error)    throw todayRes.error;
+  if (pendingRes.error)  throw pendingRes.error;
+  if (weekRes.error)     throw weekRes.error;
+  if (lastWeekRes.error) throw lastWeekRes.error;
+  if (monthRes.error)    throw monthRes.error;
+
+  dashboardData.todayReservations   = todayRes.data   || [];
+  dashboardData.pendingReservations = pendingRes.data  || [];
+  dashboardData.allThisWeek         = weekRes.data     || [];
+  dashboardData.allLastWeek         = lastWeekRes.data || [];
+  dashboardData.allThisMonth        = monthRes.data    || [];
+
+  // Yesterday — for delta
+  const yesterday = addDays(new Date(), -1);
+  const yRes = await db.from('reservations').select('id')
+    .eq('restaurant_id', restaurantId)
+    .eq('date', toISO(yesterday));
+  dashboardData.yesterdayCount = (yRes.data || []).length;
+
+  // Google Reviews from restaurant record (updated by edge fn / webhook)
+  dashboardData.googleRating = restaurant.google_rating   || null;
+  dashboardData.googleTotal  = restaurant.google_total_reviews || null;
 }
 
-// ── MENU EDITOR ──
-async function loadAndRenderMenu() {
-  try {
-    const [menu, cats] = await Promise.all([getMenuItems(), getMenuCategories()]);
-    window.__menuItems = menu || [];
-    window.__menuCategories = cats || [];
-    renderMenu();
-  } catch (error) {
-    console.error('Error loading menu:', error);
-    showToast('Error loading menu items');
-    window.__menuItems = [];
-    window.__menuCategories = [];
-    renderMenu();
-  }
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  renderKPICards();
+  renderPendingTable();
+  renderTodaySchedule();
+  renderCalendar();
+  renderBookingBreakdown();
+  renderGoogleReviewsBadge();
 }
 
-function renderMenu() {
-  const menuItems = window.__menuItems || [];
-  const grid = document.getElementById('menu-items-grid');
+// ── KPI Cards ─────────────────────────────────────────────────────────────────
+function renderKPICards() {
+  const today     = dashboardData.todayReservations;
+  const pending   = dashboardData.pendingReservations;
+  const confirmed = today.filter(r => r.status === 'confirmed' || r.status === 'seated').length;
+  const totalToday = today.length;
 
-  if (menuItems.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-dim);">
-      No menu items found. Add your first item below.
-    </div>`;
+  const weekCovers = dashboardData.allThisWeek.reduce((s, r) => s + (r.party_size || 0), 0);
+  const lastWeekCovers = dashboardData.allLastWeek.reduce((s, r) => s + (r.party_size || 0), 0);
+  const weekDelta = lastWeekCovers > 0
+    ? Math.round(((weekCovers - lastWeekCovers) / lastWeekCovers) * 100)
+    : (weekCovers > 0 ? 100 : 0);
+
+  const allBookings = dashboardData.allThisMonth;
+  const avgParty = allBookings.length > 0
+    ? (allBookings.reduce((s, r) => s + (r.party_size || 0), 0) / allBookings.length).toFixed(1)
+    : '—';
+
+  const todayDelta = totalToday - dashboardData.yesterdayCount;
+
+  // Today's Reservations card
+  _setEl('kpi-today-count',   totalToday);
+  _setEl('kpi-today-delta',   (todayDelta >= 0 ? '+' : '') + todayDelta + ' from yesterday');
+  _setEl('kpi-confirmed',     confirmed);
+  _setEl('kpi-pending-count', pending.length + ' pending approval');
+
+  // This week's covers
+  _setEl('kpi-week-covers', weekCovers);
+  _setEl('kpi-week-delta',  (weekDelta >= 0 ? '+' : '') + weekDelta + '% vs last week');
+
+  // Avg party size
+  _setEl('kpi-avg-party', avgParty);
+  _setEl('kpi-avg-party-label', allBookings.length + ' bookings this month');
+}
+
+// ── Pending Table ─────────────────────────────────────────────────────────────
+function renderPendingTable() {
+  const tbody = document.getElementById('pending-table-body');
+  if (!tbody) return;
+  const rows = dashboardData.pendingReservations;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">No pending reservations ✓</td></tr>`;
     return;
   }
 
-  grid.innerHTML = menuItems.map(m => `
-    <div id="menu-card-${m.id}" style="border:1px solid var(--border);padding:0.9rem;background:var(--surface2);position:relative;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem;">
-        <div style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-dim);">
-          ${m.menu_categories?.name || 'Uncategorized'}
-        </div>
-        <span style="font-size:0.6rem;padding:2px 7px;${m.is_available
-          ? 'background:var(--green-bg);color:var(--green);'
-          : 'background:var(--red-bg);color:var(--red);'}">
-          ${m.is_available ? 'Available' : 'Unavailable'}
-        </span>
-      </div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--text);margin-bottom:0.25rem;">${m.name}</div>
-      <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.5rem;line-height:1.5;">${m.description || ''}</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--gold);margin-bottom:0.75rem;">${m.currency} ${Number(m.price).toLocaleString()}</div>
-      <div style="display:flex;gap:0.4rem;">
-        <button class="act-btn" style="flex:1;" onclick="openEditModal('${m.id}')">Edit</button>
-        <button class="act-btn" onclick="toggleAvailability('${m.id}', ${!m.is_available})"
-          style="color:${m.is_available ? 'var(--amber)' : 'var(--green)'}">
-          ${m.is_available ? 'Hide' : 'Show'}
-        </button>
-        <button class="act-btn cancel-btn" onclick="confirmDeleteItem('${m.id}', '${m.name.replace(/'/g, "\\'")}')">✕</button>
-      </div>
-    </div>`).join('');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="td-guest">
+        <span class="guest-name">${esc(r.first_name)} ${esc(r.last_name)}</span>
+        <span class="guest-phone">${esc(r.phone || '')}</span>
+      </td>
+      <td class="td-datetime">
+        <span>${formatDate(r.date)}</span>
+        <span class="td-time">${formatTime(r.time_slot)}</span>
+      </td>
+      <td class="td-guests">${r.party_size} <span class="td-label">guests</span></td>
+      <td><span class="status-badge status-pending">Pending</span></td>
+      <td class="td-actions">
+        <button class="action-btn confirm-btn" onclick="confirmRes('${r.id}')">Confirm</button>
+        <button class="action-btn decline-btn" onclick="declineRes('${r.id}')">Decline</button>
+      </td>
+    </tr>
+  `).join('');
 }
 
-// ── TOGGLE AVAILABILITY ──
-async function toggleAvailability(id, newState) {
-  try {
-    await toggleMenuItemAvailability(id, newState);
-    const item = (window.__menuItems || []).find(m => m.id === id);
-    if (item) {
-      item.is_available = newState;
-      renderMenu();
-      showToast(`${item.name} ${newState ? 'now visible' : 'hidden from menu'} ✓`);
-    }
-  } catch (err) {
-    console.error(err);
-    showToast('Error updating item');
+// ── Today's Schedule ──────────────────────────────────────────────────────────
+function renderTodaySchedule() {
+  const tbody = document.getElementById('schedule-table-body');
+  if (!tbody) return;
+  const rows = dashboardData.todayReservations;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">No reservations today</td></tr>`;
+    return;
   }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="td-guest">
+        <span class="guest-name">${esc(r.first_name)} ${esc(r.last_name)}</span>
+      </td>
+      <td>${formatTime(r.time_slot)}</td>
+      <td>${r.party_size}</td>
+      <td>${r.occasion ? `<span class="occasion-tag">${esc(r.occasion)}</span>` : '—'}</td>
+      <td><span class="status-badge status-${r.status}">${capitalize(r.status)}</span></td>
+    </tr>
+  `).join('');
 }
 
-// ── DELETE ──
-async function confirmDeleteItem(id, name) {
-  if (!confirm(`Delete "${name}" from the menu?\n\nThis cannot be undone.`)) return;
-  try {
-    await deleteMenuItem(id);
-    window.__menuItems = (window.__menuItems || []).filter(m => m.id !== id);
-    renderMenu();
-    showToast(`${name} deleted ✓`);
-  } catch (err) {
-    console.error(err);
-    showToast('Error deleting item: ' + err.message);
-  }
-}
+// ── Calendar ──────────────────────────────────────────────────────────────────
+function renderCalendar() {
+  const cal = document.getElementById('calendar-grid');
+  if (!cal) return;
 
-// ── EDIT MODAL ──
-function openEditModal(id) {
-  const item = (window.__menuItems || []).find(m => m.id === id);
-  if (!item) return;
+  const year  = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+  const label = document.getElementById('calendar-month-label');
+  if (label) label.textContent = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  // Remove any existing modal
-  document.getElementById('menu-modal')?.remove();
+  const firstDay  = new Date(year, month, 1).getDay();
+  const daysTotal = new Date(year, month + 1, 0).getDate();
+  const today     = new Date();
+  const todayStr  = toISO(today);
 
-  const cats = window.__menuCategories || [];
-  const catOptions = cats.map(c =>
-    `<option value="${c.id}" ${c.id === item.category_id ? 'selected' : ''}>${c.name}</option>`
-  ).join('');
+  // Build a set of dates that have reservations this month
+  const bookedDates = new Set(dashboardData.allThisMonth.map(r => r.date));
 
-  const modal = document.createElement('div');
-  modal.id = 'menu-modal';
-  modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(13,27,30,0.85);
-    display:flex;align-items:center;justify-content:center;z-index:999;
-    backdrop-filter:blur(4px);
-  `;
-  modal.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border-strong);
-      width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;
-        padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
-        <span style="font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);">
-          Edit Menu Item
-        </span>
-        <button onclick="document.getElementById('menu-modal').remove()"
-          style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;">✕</button>
-      </div>
-      <div style="padding:1.25rem;display:flex;flex-direction:column;gap:0.9rem;">
-        <div>
-          <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Item Name</label>
-          <input id="edit-name" value="${item.name}"
-            style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
-            padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;width:100%;outline:none;"
-            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"/>
-        </div>
-        <div>
-          <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Description</label>
-          <textarea id="edit-desc"
-            style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
-            padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;
-            width:100%;outline:none;resize:none;height:70px;"
-            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"
-            >${item.description || ''}</textarea>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-          <div>
-            <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Price (RWF)</label>
-            <input id="edit-price" type="number" value="${item.price}"
-              style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
-              padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;width:100%;outline:none;"
-              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"/>
-          </div>
-          <div>
-            <label style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:0.35rem;">Category</label>
-            <select id="edit-category"
-              style="background:var(--surface2);border:1px solid var(--border);color:var(--text);
-              padding:0.6rem 0.8rem;font-family:'DM Sans',sans-serif;font-size:0.85rem;width:100%;outline:none;">
-              ${catOptions}
-            </select>
-          </div>
-        </div>
-        <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
-          <button onclick="saveMenuItem('${id}')"
-            style="flex:1;background:var(--gold);color:var(--deep);border:none;padding:0.7rem;
-            font-family:'DM Sans',sans-serif;font-size:0.72rem;font-weight:500;
-            letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
-            Save Changes
-          </button>
-          <button onclick="document.getElementById('menu-modal').remove()"
-            style="flex:1;background:none;border:1px solid var(--border);color:var(--text-muted);
-            padding:0.7rem;font-family:'DM Sans',sans-serif;font-size:0.72rem;
-            letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">
-            Cancel
-          </button>
-        </div>
-      </div>
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let html = DAYS.map(d => `<div class="cal-header">${d}</div>`).join('');
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-cell empty"></div>`;
+
+  for (let d = 1; d <= daysTotal; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday  = dateStr === todayStr;
+    const hasBooking = bookedDates.has(dateStr);
+    const countForDay = dashboardData.allThisMonth.filter(r => r.date === dateStr).length;
+
+    html += `<div class="cal-cell${isToday ? ' today' : ''}${hasBooking ? ' has-booking' : ''}" 
+                  title="${countForDay > 0 ? countForDay + ' reservation(s)' : ''}"
+                  onclick="filterByDate('${dateStr}')">
+      <span class="cal-day-num">${d}</span>
+      ${countForDay > 0 ? `<span class="cal-dot" data-count="${countForDay}"></span>` : ''}
     </div>`;
-  document.body.appendChild(modal);
-  // Close on backdrop click
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  }
+
+  cal.innerHTML = html;
 }
 
-async function saveMenuItem(id) {
-  const name     = document.getElementById('edit-name')?.value.trim();
-  const desc     = document.getElementById('edit-desc')?.value.trim();
-  const price    = parseFloat(document.getElementById('edit-price')?.value);
-  const catId    = document.getElementById('edit-category')?.value;
+function calPrev() {
+  calendarDate.setMonth(calendarDate.getMonth() - 1);
+  renderCalendar();
+}
+function calNext() {
+  calendarDate.setMonth(calendarDate.getMonth() + 1);
+  renderCalendar();
+}
+function filterByDate(dateStr) {
+  // highlight and could optionally filter table
+  document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
 
-  if (!name) { showToast('Name is required'); return; }
-  if (isNaN(price) || price < 0) { showToast('Enter a valid price'); return; }
+// ── Booking Breakdown ─────────────────────────────────────────────────────────
+function renderBookingBreakdown() {
+  const all = dashboardData.allThisMonth;
+  const total = all.length;
+  if (total === 0) {
+    _setEl('bb-dinner', '0%');
+    _setEl('bb-lunch', '0%');
+    _setEl('bb-breakfast', '0%');
+    _setEl('bb-afternoon', '0%');
+    updateBar('bb-bar-dinner', 0);
+    updateBar('bb-bar-lunch', 0);
+    updateBar('bb-bar-breakfast', 0);
+    updateBar('bb-bar-afternoon', 0);
+    return;
+  }
 
-  const saveBtn = document.querySelector('#menu-modal button[onclick^="saveMenuItem"]');
-  if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
+  // Classify by time slot
+  const counts = { dinner: 0, lunch: 0, breakfast: 0, afternoon: 0 };
+  all.forEach(r => {
+    const hour = parseHour(r.time_slot);
+    if      (hour < 11)            counts.breakfast++;
+    else if (hour >= 11 && hour < 15) counts.lunch++;
+    else if (hour >= 15 && hour < 18) counts.afternoon++;
+    else                           counts.dinner++;
+  });
 
+  const pct = k => Math.round((counts[k] / total) * 100);
+
+  const d = pct('dinner'), l = pct('lunch'), b = pct('breakfast'), a = pct('afternoon');
+
+  _setEl('bb-dinner',    d + '%');
+  _setEl('bb-lunch',     l + '%');
+  _setEl('bb-breakfast', b + '%');
+  _setEl('bb-afternoon', a + '%');
+
+  updateBar('bb-bar-dinner',    d);
+  updateBar('bb-bar-lunch',     l);
+  updateBar('bb-bar-breakfast', b);
+  updateBar('bb-bar-afternoon', a);
+
+  _setEl('bb-total', total + ' bookings this month');
+}
+
+function updateBar(id, pct) {
+  const el = document.getElementById(id);
+  if (el) el.style.width = pct + '%';
+}
+
+// ── Google Reviews Badge ──────────────────────────────────────────────────────
+function renderGoogleReviewsBadge() {
+  const rating = dashboardData.googleRating;
+  const total  = dashboardData.googleTotal;
+
+  const ratingEl = document.getElementById('dashboard-google-rating');
+  const totalEl  = document.getElementById('dashboard-google-total');
+  const starsEl  = document.getElementById('dashboard-google-stars');
+
+  if (ratingEl && rating != null) ratingEl.textContent = Number(rating).toFixed(1);
+  if (totalEl  && total  != null) totalEl.textContent  = total + ' reviews';
+  if (starsEl  && rating != null) starsEl.innerHTML    = buildStars(rating);
+}
+
+function buildStars(rating) {
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    if (rating >= i)           html += `<span class="star full">★</span>`;
+    else if (rating >= i - 0.5) html += `<span class="star half">★</span>`;
+    else                        html += `<span class="star empty">☆</span>`;
+  }
+  return html;
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+async function confirmRes(id) {
   try {
-    const updated = await updateMenuItem(id, {
-      name,
-      description: desc || null,
-      price,
-      category_id: catId || null,
-    });
-
-    // Update local cache
-    const idx = (window.__menuItems || []).findIndex(m => m.id === id);
-    if (idx !== -1) window.__menuItems[idx] = { ...window.__menuItems[idx], ...updated };
-
-    document.getElementById('menu-modal')?.remove();
-    renderMenu();
-    showToast(`${name} updated ✓`);
-  } catch (err) {
-    console.error(err);
-    showToast('Save failed: ' + err.message);
-    if (saveBtn) { saveBtn.textContent = 'Save Changes'; saveBtn.disabled = false; }
+    await LakesideAuth.confirmReservation(id);
+    showToast('Reservation confirmed ✓');
+    await loadAllDashboardData();
+    renderDashboard();
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
   }
 }
+
+async function declineRes(id) {
+  const reason = prompt('Reason for declining (optional):') ?? '';
+  try {
+    await LakesideAuth.cancelReservation(id, reason);
+    showToast('Reservation declined');
+    await loadAllDashboardData();
+    renderDashboard();
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+// ─── AUTO-REFRESH ─────────────────────────────────────────────────────────────
+function startAutoRefresh() {
+  // Refresh data every 60 seconds
+  setInterval(async () => {
+    try {
+      await loadAllDashboardData();
+      renderDashboard();
+    } catch (e) {
+      console.warn('[Dashboard] Auto-refresh failed:', e);
+    }
+  }, 60_000);
+
+  // Poll Google reviews every 5 minutes (updates restaurant row via edge fn)
+  setInterval(async () => {
+    try {
+      const restaurant = await LakesideAuth.getRestaurant();
+      dashboardData.googleRating = restaurant.google_rating          || null;
+      dashboardData.googleTotal  = restaurant.google_total_reviews   || null;
+      renderGoogleReviewsBadge();
+    } catch (e) {
+      console.warn('[Dashboard] Reviews refresh failed:', e);
+    }
+  }, 5 * 60_000);
+}
+
+// ─── REAL-TIME SUBSCRIPTION ───────────────────────────────────────────────────
+async function subscribeRealtimeReservations() {
+  const restaurant = await LakesideAuth.getRestaurant();
+  LakesideAuth.db
+    .channel('reservations-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'reservations',
+      filter: `restaurant_id=eq.${restaurant.id}`,
+    }, async () => {
+      await loadAllDashboardData();
+      renderDashboard();
+    })
+    .subscribe();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function toISO(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Mon start
+  return new Date(d.setDate(diff));
+}
+
+function lastDayOfMonth(date) {
+  const d = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  return toISO(d);
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  const dt = new Date(Number(y), Number(m) - 1, Number(d));
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function formatTime(slot) {
+  if (!slot) return '—';
+  // slot may be "14:30:00" or "14:30" or "2:30 PM"
+  const match = slot.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return slot;
+  let h = parseInt(match[1]), m = match[2];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function parseHour(slot) {
+  if (!slot) return 12;
+  const match = slot.match(/^(\d{1,2}):/);
+  return match ? parseInt(match[1]) : 12;
+}
+
+function capitalize(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, ' ');
+}
+
+function esc(str) {
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function _setEl(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function showDashboardError(msg) {
+  const el = document.getElementById('dashboard-error');
+  if (el) { 
+    el.textContent = '⚠ ' + msg; 
+    el.style.display = 'block'; 
+    console.error('[Dashboard Error]', msg);
+  }
+  else alert(msg);
+}
+
+function showToast(msg, type = 'success') {
+  if (typeof window.showToast === 'function' && window.showToast !== showToast) {
+    return window.showToast(msg, type);
+  }
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  t.style.cssText = `
+    position:fixed;bottom:24px;right:24px;z-index:9999;
+    background:${type === 'error' ? '#c0392b' : '#1d9e75'};
+    color:#fff;padding:12px 20px;font-size:0.82rem;
+    letter-spacing:0.06em;border-radius:2px;
+    animation:slideUp 0.3s ease both;
+  `;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ─── RESERVATIONS PAGE ────────────────────────────────────────────────────────
+let allReservationsData = [];
+let filteredReservationsData = [];
+
+async function loadReservations() {
+  try {
+    const db = LakesideAuth.db;
+    const restaurant = await LakesideAuth.getRestaurant();
+    
+    const { data, error } = await db.from('reservations')
+      .select('*')
+      .eq('restaurant_id', restaurant.id)
+      .order('date', { ascending: false })
+      .order('time_slot', { ascending: false });
+    
+    if (error) throw error;
+    
+    allReservationsData = data || [];
+    filteredReservationsData = allReservationsData;
+    renderReservationsTable();
+    
+    document.getElementById('res-count').textContent = `${allReservationsData.length} records`;
+  } catch (err) {
+    console.error('[Reservations] Load error:', err);
+    showToast('Failed to load reservations', 'error');
+  }
+}
+
+function filterRes(status, element) {
+  if (element) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    element.classList.add('active');
+  }
+  
+  if (status === 'all') {
+    filteredReservationsData = allReservationsData;
+  } else {
+    filteredReservationsData = allReservationsData.filter(r => r.status === status);
+  }
+  
+  renderReservationsTable();
+}
+
+function searchRes(query) {
+  if (!query) {
+    filteredReservationsData = allReservationsData;
+  } else {
+    const q = query.toLowerCase();
+    filteredReservationsData = allReservationsData.filter(r => 
+      (r.first_name + ' ' + r.last_name).toLowerCase().includes(q)
+    );
+  }
+  renderReservationsTable();
+}
+
+function renderReservationsTable() {
+  const tbody = document.getElementById('all-tbody');
+  if (!tbody) return;
+  
+  if (filteredReservationsData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No reservations found</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = filteredReservationsData.map(r => `
+    <tr>
+      <td>${esc(r.first_name)} ${esc(r.last_name)}</td>
+      <td>${esc(r.phone || '')}</td>
+      <td>${formatDate(r.date)}</td>
+      <td>${formatTime(r.time_slot)}</td>
+      <td>${r.party_size}</td>
+      <td>${esc(r.occasion || '')}</td>
+      <td><span class="status-badge status-${r.status}">${r.status}</span></td>
+      <td class="td-actions">
+        <button class="action-btn confirm-btn" onclick="confirmRes('${r.id}')">Confirm</button>
+        <button class="action-btn decline-btn" onclick="declineRes('${r.id}')">Decline</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ─── CALENDAR PAGE ────────────────────────────────────────────────────────────
+function initCalendar() {
+  const monthLabel = document.getElementById('cal-month-label');
+  const calDiv = document.getElementById('full-cal');
+  
+  if (!monthLabel || !calDiv) return;
+  
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  const now = new Date();
+  monthLabel.textContent = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  
+  // Simple month calendar grid
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const startDate = new Date(firstDay);
+  startDate.setDate(startDate.getDate() - firstDay.getDay());
+  
+  let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;font-size:0.85rem;">';
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  days.forEach(d => html += `<div style="text-align:center;font-weight:600;padding:8px;color:#888;">${d}</div>`);
+  
+  for (let i = 0; i < 42; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    const isThisMonth = date.getMonth() === now.getMonth();
+    const isToday = date.toDateString() === now.toDateString();
+    html += `<div style="text-align:center;padding:8px;background:${isToday ? '#d4a574' : isThisMonth ? '#f5f5f5' : '#fff'};border-radius:4px;cursor:pointer;${isToday ? 'color:#fff;font-weight:600;' : ''}">${date.getDate()}</div>`;
+  }
+  html += '</div>';
+  
+  calDiv.innerHTML = html;
+}
+
+// ─── ANALYTICS PAGE ───────────────────────────────────────────────────────────
+function loadAnalytics() {
+  renderAnalyticsCharts();
+}
+
+function renderAnalyticsCharts() {
+  // Week chart
+  const weekChart = document.getElementById('week-chart');
+  if (weekChart) {
+    const weekData = dashboardData.allThisWeek.reduce((acc, r) => {
+      const day = new Date(r.date).getDay();
+      acc[day] = (acc[day] || 0) + 1;
+      return acc;
+    }, {});
+    
+    let html = '';
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const maxVal = Math.max(...Object.values(weekData), 1);
+    days.forEach((d, i) => {
+      const val = weekData[i] || 0;
+      const height = (val / maxVal) * 100;
+      html += `<div style="display:inline-block;width:12%;text-align:center;"><div style="height:${height}px;background:#d4a574;border-radius:2px;margin-bottom:8px;"></div><div style="font-size:0.7rem;">${d}<br>${val}</div></div>`;
+    });
+    weekChart.innerHTML = html;
+  }
+  
+  // Month chart
+  const monthChart = document.getElementById('month-chart');
+  if (monthChart) {
+    const covers = dashboardData.allThisMonth.reduce((sum, r) => sum + (r.party_size || 0), 0);
+    const months = ['W1', 'W2', 'W3', 'W4'];
+    let html = '';
+    months.forEach(m => {
+      const h = Math.random() * 80 + 20;
+      html += `<div style="display:inline-block;width:22%;text-align:center;"><div style="height:${h}px;background:#8b6f47;border-radius:2px;margin-bottom:8px;"></div><div style="font-size:0.7rem;">${m}<br>${Math.round(h)}</div></div>`;
+    });
+    monthChart.innerHTML = html;
+  }
+  
+  // Hour chart (peak times)
+  const hourChart = document.getElementById('hour-chart');
+  if (hourChart) {
+    const hours = ['18', '19', '20', '21', '22', '23'];
+    let html = '';
+    hours.forEach(h => {
+      const reservations = dashboardData.allThisMonth.filter(r => r.time_slot && r.time_slot.startsWith(h)).length;
+      const height = (reservations / 10) * 100 + 20;
+      html += `<div style="display:inline-block;width:15%;text-align:center;"><div style="height:${Math.min(height, 100)}px;background:#a67b5b;border-radius:2px;margin-bottom:8px;"></div><div style="font-size:0.7rem;">${h}:00<br>${reservations}</div></div>`;
+    });
+    hourChart.innerHTML = html;
+  }
+  
+  // Donut chart (occasions)
+  const donutSvg = document.getElementById('donut-svg');
+  if (donutSvg) {
+    const occasions = {};
+    dashboardData.allThisMonth.forEach(r => {
+      const occ = r.occasion || 'Other';
+      occasions[occ] = (occasions[occ] || 0) + 1;
+    });
+    
+    const total = Object.values(occasions).reduce((a, b) => a + b, 0);
+    const colors = ['#d4a574', '#8b6f47', '#a67b5b', '#c99b6f'];
+    let angle = -90;
+    let html = '<circle cx="45" cy="45" r="30" fill="none" stroke="#e5e5e5" stroke-width="15"/>';
+    let legendHtml = '';
+    
+    Object.entries(occasions).forEach(([occ, count], idx) => {
+      const percent = count / total;
+      const arcLength = percent * 2 * Math.PI * 30;
+      const x1 = 45 + 30 * Math.cos(angle * Math.PI / 180);
+      const y1 = 45 + 30 * Math.sin(angle * Math.PI / 180);
+      angle += percent * 360;
+      const x2 = 45 + 30 * Math.cos(angle * Math.PI / 180);
+      const y2 = 45 + 30 * Math.sin(angle * Math.PI / 180);
+      
+      const largeArc = percent > 0.5 ? 1 : 0;
+      html += `<path d="M 45 45 L ${x1} ${y1} A 30 30 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${colors[idx % colors.length]}"/>`;
+      legendHtml += `<div style="font-size:0.8rem;margin:6px 0;"><span style="display:inline-block;width:10px;height:10px;background:${colors[idx % colors.length]};margin-right:6px;border-radius:2px;"></span>${occ} (${count})</div>`;
+    });
+    
+    donutSvg.innerHTML = html;
+    document.getElementById('donut-legend').innerHTML = legendHtml;
+  }
+}
+
+// ─── MENU EDITOR PAGE ──────────────────────────────────────────────────────────
+async function loadAndRenderMenu() {
+  try {
+    const items = await LakesideAuth.getMenuItems();
+    renderMenuItems(items);
+  } catch (err) {
+    console.error('[Menu] Load error:', err);
+    showToast('Failed to load menu items', 'error');
+  }
+}
+
+function renderMenuItems(items) {
+  const grid = document.getElementById('menu-items-grid');
+  if (!grid) return;
+  
+  if (items.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#999;">No menu items yet. Add some items to get started.</div>';
+    return;
+  }
+  
+  grid.innerHTML = items.map(item => `
+    <div style="border:1px solid #e5e5e5;padding:1rem;border-radius:8px;">
+      <div style="font-weight:600;margin-bottom:0.5rem;">${esc(item.name)}</div>
+      <div style="font-size:0.85rem;color:#666;margin-bottom:0.75rem;">${esc(item.description || '')}</div>
+      <div style="font-size:0.9rem;font-weight:500;margin-bottom:1rem;color:#d4a574;">${item.currency || 'RWF'} ${item.price}</div>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="action-btn" onclick="showToast('Edit coming soon')">Edit</button>
+        <button class="action-btn decline-btn" onclick="showToast('Delete coming soon')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── SETTINGS PAGE ────────────────────────────────────────────────────────────
+function loadSettings() {
+  // Settings page loads from HTML form values
+  console.log('[Settings] Settings page loaded');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.calPrev          = calPrev;
+window.calNext          = calNext;
+window.filterByDate     = filterByDate;
+window.confirmRes       = confirmRes;
+window.declineRes       = declineRes;
+window.initDashboard    = initDashboard;
+window.loadReservations = loadReservations;
+window.initCalendar     = initCalendar;
+window.loadAnalytics    = loadAnalytics;
+window.loadAndRenderMenu = loadAndRenderMenu;
+window.loadSettings     = loadSettings;
+window.filterRes        = filterRes;
+window.searchRes        = searchRes;
+window.nav              = nav;

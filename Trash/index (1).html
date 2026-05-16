@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Bebas+Neue&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <link rel="stylesheet" href="css/style.css"/>
-<link rel="stylesheet" href="css/landing-responsive.css"/>
 </head>
 <body>
 <!-- NAV -->
@@ -20,24 +19,7 @@
     <li><a href="#reserve">Reserve</a></li>
   </ul>
   <button class="nav-cta" onclick="document.getElementById('reserve').scrollIntoView({behavior:'smooth'})">Book a Table</button>
-  <!-- Mobile toggle -->
-  <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
 </nav>
-
-<!-- Mobile drawer -->
-<div class="nav-drawer" role="dialog" aria-modal="true">
-  <button class="nav-drawer-close" aria-label="Close menu">✕</button>
-  <ul class="nav-links">
-    <li><a href="#about">About</a></li>
-    <li><a href="#menu">Menu</a></li>
-    <li><a href="#gallery">Gallery</a></li>
-    <li><a href="#reviews">Reviews</a></li>
-    <li><a href="#reserve">Reserve</a></li>
-  </ul>
-  <a href="#reserve" class="btn-primary">Reserve a Table</a>
-</div>
 
 <!-- HERO -->
 <div class="hero" id="home">
@@ -115,6 +97,7 @@
       <div class="section-label">Our Menu</div>
       <h2 class="section-title">Crafted with <em>Passion</em></h2>
     </div>
+
     <!-- Tabs — injected dynamically by landing.js -->
     <div class="menu-tabs reveal" id="menu-tabs">
       <div style="font-size:0.78rem;color:var(--text-muted);padding:0.8rem 0;">Loading menu…</div>
@@ -183,13 +166,13 @@
     </div>
 
     <div class="reviews-nav">
-      <button class="reviews-nav-btn" onclick="reviewsPrev()">‹</button>
-      <div class="reviews-dots"></div>
-      <button class="reviews-nav-btn" onclick="reviewsNext()">›</button>
+      <button class="reviews-nav-btn" id="revPrev" onclick="slideReviews(-1)">&#8592;</button>
+      <div class="reviews-dots" id="reviewsDots"></div>
+      <button class="reviews-nav-btn" id="revNext" onclick="slideReviews(1)">&#8594;</button>
     </div>
 
     <div class="reviews-cta">
-      <a href="https://www.google.com/maps/place/Lakeside+Bar+Beach+%26+Restaurant/@-1.7078632,29.2637753,17z/data=!4m16!1m9!3m8!1s0x19dd050e45c21e51:0x5e14ae556177f369!2sLakeside+Bar+Beach+%26+Restaurant!8m2!3d-1.7078632!4d29.2637753!9m1!1b1!16s%2Fg%2F11dyz4bzp8!3m5!1s0x19dd050e45c21e51:0x5e14ae556177f369!8m2!3d-1.7078632!4d29.2637753!16s%2Fg%2F11dyz4bzp8?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDUxMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener">
+      <a href="https://www.google.com/maps/place/Lakeside+Bar+Beach+%26+Restaurant" target="_blank" rel="noopener">
         Read all 334 reviews on Google Maps ↗
       </a>
     </div>
@@ -332,6 +315,5 @@
 <script src="js/landing.js"></script>
 <script src="js/reviews.js"></script>
 <script src="js/booking.js"></script>
-<script src="js/landing-mobile.js"></script>
 </body>
 </html>
